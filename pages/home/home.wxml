@@ -1,1 +1,107 @@
-<view class="page dashboard"><view class="date">{{dateLabel}}</view><view class="welcome">{{role==='child'?'今天也要认真完成任务哦':'查看孩子今天的打卡情况'}}</view><view class="summary"><view class="metric"><view class="metric-icon progress-icon">✓</view><view><view class="metric-label">今日进度</view><view class="metric-value">{{completedTasks}}/{{totalTasks}}</view></view></view><view class="metric"><view class="metric-icon reward-icon">🥬</view><view><view class="metric-label">今日收获</view><view class="metric-value reward">+{{earnedToday}} 颗</view></view></view><view class="progress-track"><view class="progress-fill" style="width:{{progressPercent}}%"></view></view><view class="garden-line"><text>菜地共有 {{cabbages}} 颗白菜</text><text>连续 {{streak}} 天</text></view></view><view class="section-head"><view><view class="section-title">今日打卡任务</view><view class="section-sub">完成一项，收获一颗白菜</view></view><view class="task-count">{{completedTasks}} / {{totalTasks}}</view></view><view wx:if="{{ready&&tasks.length===0}}" class="empty"><view class="empty-icon">🌱</view><view class="empty-title">今天还没有任务</view><view class="muted">爸爸妈妈可以前往“任务”页添加</view></view><view class="task-card" wx:for="{{tasks}}" wx:key="id"><view class="task-main"><view class="task-mark {{item.status==='done'?'done-mark':item.status==='submitted'?'pending-mark':''}}">{{item.status==='done'?'✓':index+1}}</view><view class="task-copy"><view class="task-title">{{item.title}}</view><view class="task-detail">{{item.detail}}</view></view><view class="status {{item.status}}">{{item.status==='todo'?'待打卡':item.status==='submitted'?'待确认':'已完成 +1'}}</view></view><button wx:if="{{role==='child'&&item.status==='todo'}}" class="checkin-button" bindtap="submit" data-id="{{item.id}}" loading="{{submittingId===item.id}}" disabled="{{submittingId!==''}}">打卡</button><button wx:if="{{role!=='child'&&item.status==='submitted'}}" class="checkin-button confirm-button" bindtap="confirm" data-id="{{item.id}}" loading="{{confirmingId===item.id}}" disabled="{{confirmingId!==''}}">确认旧打卡</button></view><view class="tip">🐻 21:00 若还有未完成任务，小熊只会偷走一颗白菜。明天再一起赢回来！</view></view>
+<view class="page dashboard">
+  <view class="date">{{dateLabel}}</view>
+  <view class="welcome">{{welcomeText}}</view>
+
+  <view class="summary">
+    <view class="metric">
+      <view class="metric-icon progress-icon">✓</view>
+      <view>
+        <view class="metric-label">{{periodWord}}进度</view>
+        <view class="metric-value">{{completedTasks}}/{{totalTasks}}</view>
+      </view>
+    </view>
+    <view class="metric">
+      <view class="metric-icon reward-icon">🥬</view>
+      <view>
+        <view class="metric-label">{{periodWord}}收获</view>
+        <view class="metric-value reward">+{{earnedToday}} 颗</view>
+      </view>
+    </view>
+    <view class="progress-track">
+      <view class="progress-fill" style="width:{{progressPercent}}%"></view>
+    </view>
+    <view class="garden-line">
+      <text>菜地共有 {{cabbages}} 颗白菜</text>
+      <text>连续 {{streak}} 天</text>
+    </view>
+  </view>
+
+  <view class="week-card">
+    <view class="week-nav" bindtap="changeWeek" data-delta="-1">‹</view>
+    <view
+      class="day-item {{item.selected?'selected':''}} {{item.today?'today':''}} {{item.future?'future':''}}"
+      wx:for="{{calendarDays}}"
+      wx:key="date"
+      bindtap="selectDate"
+      data-date="{{item.date}}"
+    >
+      <view class="week-name">{{item.week}}</view>
+      <view class="day-number">{{item.day}}</view>
+      <view wx:if="{{item.today}}" class="today-dot"></view>
+    </view>
+    <view class="week-nav {{canNextWeek?'':'disabled'}}" bindtap="changeWeek" data-delta="1">›</view>
+  </view>
+
+  <view class="section-head">
+    <view>
+      <view class="section-title">{{periodWord}}打卡任务</view>
+      <view class="section-sub">{{selectedIsToday?'完成后提交，家长确认后奖励白菜':'历史任务与打卡结果'}}</view>
+    </view>
+    <view class="task-count">{{completedTasks}} / {{totalTasks}}</view>
+  </view>
+
+  <view wx:if="{{ready&&tasks.length===0}}" class="empty">
+    <view class="empty-icon">{{historyUnavailable?'⚠️':'🌱'}}</view>
+    <view class="empty-title">{{historyUnavailable?'历史数据暂不可用':selectedIsToday?'今天还没有任务':'当天没有任务记录'}}</view>
+    <view class="muted">{{historyUnavailable?'请重新部署 getDashboard 云函数':selectedIsToday?'爸爸妈妈可以前往“任务”页添加':'可以选择其他日期继续查看'}}</view>
+  </view>
+
+  <view class="task-card" wx:for="{{tasks}}" wx:key="id">
+    <view class="task-main" bindtap="showTaskDetail" data-id="{{item.id}}">
+      <view class="task-mark {{item.status==='done'?'done-mark':item.status==='submitted'?'pending-mark':''}}">{{item.status==='done'?'✓':index+1}}</view>
+      <view class="task-copy">
+        <view class="task-title">{{item.title}}</view>
+        <view class="task-detail">{{item.detail}}</view>
+        <view class="detail-entry">查看详情 ›</view>
+      </view>
+      <view class="status {{item.status}}">{{item.status==='todo'?'待打卡':item.status==='submitted'?'待确认':'已完成 +1'}}</view>
+    </view>
+    <button
+      wx:if="{{role==='child'&&item.status==='todo'}}"
+      class="checkin-button"
+      bindtap="submit"
+      data-id="{{item.id}}"
+      loading="{{submittingId===item.id}}"
+      disabled="{{submittingId!==''}}"
+    >提交打卡</button>
+    <button
+      wx:if="{{role!=='child'&&item.status==='submitted'}}"
+      class="checkin-button confirm-button"
+      bindtap="confirm"
+      data-id="{{item.id}}"
+      loading="{{confirmingId===item.id}}"
+      disabled="{{confirmingId!==''}}"
+    >确认并奖励白菜</button>
+    <view wx:if="{{!selectedIsToday&&role!=='child'&&item.status==='todo'}}" class="history-task-actions">
+      <button class="history-edit-button" bindtap="editHistoryTask" data-id="{{item.id}}">修改任务</button>
+      <button class="history-delete-button" bindtap="deleteHistoryTask" data-id="{{item.id}}" loading="{{deletingHistoryId===item.id}}" disabled="{{deletingHistoryId!==''}}">删除</button>
+    </view>
+  </view>
+
+  <view wx:if="{{selectedIsToday}}" class="tip">🐻 23:00 若还有未完成任务，小熊只会偷走一颗白菜。明天再一起赢回来！</view>
+  <view wx:else class="history-tip">历史任务支持补打卡；待打卡任务可由爸爸妈妈修改</view>
+
+  <view wx:if="{{editingHistoryId}}" class="edit-mask" bindtap="cancelHistoryEdit">
+    <view class="edit-dialog" catchtap="noop">
+      <view class="edit-dialog-title">修改历史任务</view>
+      <input class="history-input" value="{{editTitle}}" placeholder="任务名称" data-key="editTitle" bindinput="historyInput"/>
+      <textarea class="history-textarea" value="{{editDetail}}" placeholder="学习要求（可选）" data-key="editDetail" bindinput="historyInput"/>
+      <view class="edit-dialog-actions">
+        <button class="dialog-cancel" bindtap="cancelHistoryEdit" disabled="{{savingHistoryTask}}">取消</button>
+        <button class="dialog-save" bindtap="saveHistoryEdit" loading="{{savingHistoryTask}}" disabled="{{savingHistoryTask}}">保存修改</button>
+      </view>
+    </view>
+  </view>
+
+  <task-detail visible="{{detailVisible}}" task="{{detailTask}}" bindclose="closeTaskDetail"/>
+</view>

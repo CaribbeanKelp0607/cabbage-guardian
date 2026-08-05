@@ -1,0 +1,1 @@
+{"triggers":[{"name":"settleDayAt23","type":"timer","config":"0 0 23 * * * *"}]}

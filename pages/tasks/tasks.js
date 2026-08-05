@@ -1,1 +1,119 @@
-const s=require('../../utils/store');const message=e=>(e&&e.message)||(e&&e.errMsg)||'操作失败';Page({data:{title:'',detail:'',saving:false,deletingId:'',editingId:'',tasks:[],role:''},onShow(){this.load()},load(){s.get().then(x=>this.setData({...x,tasks:(x.tasks||[]).map(t=>({...t,id:t.id||t._id}))})).catch(e=>{this.setData({role:''});wx.showToast({title:message(e),icon:'none'})})},i(e){this.setData({[e.currentTarget.dataset.k]:e.detail.value})},save(){if(this.data.saving)return;const title=this.data.title.trim(),detail=this.data.detail.trim()||'请认真完成';if(!title)return wx.showToast({title:'请填写作业名称',icon:'none'});this.setData({saving:true});const requestId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2),request=this.data.editingId?s.updateTask(this.data.editingId,{title,detail}):s.add({title,detail,requestId});request.then(x=>{wx.showToast({title:x&&x.duplicate?'任务已存在':this.data.editingId?'修改成功':'已布置'});this.setData({title:'',detail:'',editingId:'',saving:false});this.load()}).catch(e=>{this.setData({saving:false});wx.showToast({title:message(e),icon:'none'})})},edit(e){const id=e.currentTarget.dataset.id,t=this.data.tasks.find(x=>x.id===id);if(!t||t.status!=='todo')return;this.setData({editingId:id,title:t.title,detail:t.detail||''})},cancelEdit(){this.setData({editingId:'',title:'',detail:''})},remove(e){const id=e.currentTarget.dataset.id,t=this.data.tasks.find(x=>x.id===id);if(!t||t.status!=='todo'||this.data.deletingId)return;wx.showModal({title:'删除任务',content:`确定删除“${t.title}”吗？`,confirmColor:'#c4584b',success:r=>{if(!r.confirm)return;this.setData({deletingId:id});s.deleteTask(id).then(()=>{wx.showToast({title:'已删除'});if(this.data.editingId===id)this.cancelEdit();this.setData({deletingId:''});this.load()}).catch(err=>{this.setData({deletingId:''});wx.showToast({title:message(err),icon:'none'})})}})},goHome(){wx.switchTab({url:'/pages/home/home'})}})
+const s = require('../../utils/store')
+
+const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
+
+Page({
+  data: {
+    title: '',
+    detail: '',
+    saving: false,
+    deletingId: '',
+    confirmingId: '',
+    editingId: '',
+    tasks: [],
+    role: '',
+    detailVisible: false,
+    detailTask: {}
+  },
+  onShow() {
+    this.load()
+  },
+  load() {
+    s.get().then(x => this.setData({
+      ...x,
+      tasks: (x.tasks || []).map(task => ({ ...task, id: task.id || task._id }))
+    })).catch(e => {
+      this.setData({ role: '' })
+      wx.showToast({ title: message(e), icon: 'none' })
+    })
+  },
+  i(e) {
+    this.setData({ [e.currentTarget.dataset.k]: e.detail.value })
+  },
+  save() {
+    if (this.data.saving) return
+    const title = this.data.title.trim()
+    const detail = this.data.detail.trim() || '请认真完成'
+    if (!title) return wx.showToast({ title: '请填写作业名称', icon: 'none' })
+    this.setData({ saving: true })
+    const requestId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
+    const request = this.data.editingId
+      ? s.updateTask(this.data.editingId, { title, detail })
+      : s.add({ title, detail, requestId })
+    request.then(x => {
+      wx.showToast({ title: x && x.duplicate ? '任务已存在' : this.data.editingId ? '修改成功' : '已布置' })
+      this.setData({ title: '', detail: '', editingId: '', saving: false })
+      this.load()
+    }).catch(e => {
+      this.setData({ saving: false })
+      wx.showToast({ title: message(e), icon: 'none' })
+    })
+  },
+  edit(e) {
+    const id = e.currentTarget.dataset.id
+    const task = this.data.tasks.find(item => item.id === id)
+    if (!task || task.status !== 'todo') return
+    this.setData({ editingId: id, title: task.title, detail: task.detail || '' })
+  },
+  cancelEdit() {
+    this.setData({ editingId: '', title: '', detail: '' })
+  },
+  showTaskDetail(e) {
+    const id = e.currentTarget.dataset.id
+    const task = this.data.tasks.find(item => item.id === id)
+    if (!task) return
+    this.setData({ detailVisible: true, detailTask: task })
+  },
+  closeTaskDetail() {
+    this.setData({ detailVisible: false, detailTask: {} })
+  },
+  remove(e) {
+    const id = e.currentTarget.dataset.id
+    const task = this.data.tasks.find(item => item.id === id)
+    if (!task || task.status !== 'todo' || this.data.deletingId) return
+    wx.showModal({
+      title: '删除任务',
+      content: `确定删除“${task.title}”吗？`,
+      confirmColor: '#c4584b',
+      success: result => {
+        if (!result.confirm) return
+        this.setData({ deletingId: id })
+        s.deleteTask(id).then(() => {
+          wx.showToast({ title: '已删除' })
+          if (this.data.editingId === id) this.cancelEdit()
+          this.setData({ deletingId: '' })
+          this.load()
+        }).catch(e => {
+          this.setData({ deletingId: '' })
+          wx.showToast({ title: message(e), icon: 'none' })
+        })
+      }
+    })
+  },
+  confirmTask(e) {
+    const id = e.currentTarget.dataset.id
+    const task = this.data.tasks.find(item => item.id === id)
+    if (!task || task.status !== 'submitted' || this.data.confirmingId) return
+    wx.showModal({
+      title: '确认打卡',
+      content: `确认孩子已完成“${task.title}”吗？确认后奖励一颗白菜。`,
+      confirmText: '确认完成',
+      confirmColor: '#4d9a83',
+      success: result => {
+        if (!result.confirm) return
+        this.setData({ confirmingId: id })
+        s.confirm(id).then(x => {
+          wx.showToast({ title: x && x.duplicate ? '任务已经确认' : '确认成功，白菜 +1' })
+          this.setData({ confirmingId: '' })
+          this.load()
+        }).catch(e => {
+          this.setData({ confirmingId: '' })
+          wx.showToast({ title: message(e), icon: 'none' })
+        })
+      }
+    })
+  },
+  goHome() {
+    wx.switchTab({ url: '/pages/home/home' })
+  }
+})
