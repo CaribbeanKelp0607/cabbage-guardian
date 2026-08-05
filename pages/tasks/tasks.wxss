@@ -1,0 +1,1 @@
+input,textarea{display:block;background:#f5f7f1;border-radius:16rpx;padding:20rpx;margin:18rpx 0;font-size:29rpx}textarea{width:calc(100% - 40rpx);height:130rpx}

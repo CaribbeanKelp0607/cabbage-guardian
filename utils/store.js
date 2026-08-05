@@ -1,0 +1,3 @@
+const app=getApp();const demo=()=>app.globalData.family;const local=x=>Promise.resolve(JSON.parse(JSON.stringify(x)));
+const cloud=(name,data={})=>wx.cloud.callFunction({name,data}).then(r=>r.result);
+function get(){return app.globalData.env?cloud('getDashboard'):local(demo())}function submit(id){return app.globalData.env?cloud('submitCheckin',{taskId:id}):local(0)}function confirm(id){return app.globalData.env?cloud('confirmCheckin',{taskId:id}):local(0)}function add(task){return app.globalData.env?cloud('createTask',task):local(0)}function selectRole(role){return cloud('bootstrapFamily',{action:'selectRole',role})}module.exports={get,submit,confirm,add,selectRole}

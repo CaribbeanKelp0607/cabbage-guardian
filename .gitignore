@@ -1,0 +1,4 @@
+*.backup
+*.encoding-backup
+project.private.config.json
+node_modules/

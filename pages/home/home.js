@@ -1,0 +1,1 @@
+const s=require('../../utils/store');Page({data:{ready:false},onShow(){s.get().then(x=>this.setData({...x,ready:true})).catch(()=>this.setData({ready:false}))},submit(e){s.submit(e.currentTarget.dataset.id).then(()=>{wx.showToast({title:'已提交'});this.onShow()})},confirm(e){s.confirm(e.currentTarget.dataset.id).then(()=>{wx.showToast({title:'获得一颗白菜！'});this.onShow()})}})
