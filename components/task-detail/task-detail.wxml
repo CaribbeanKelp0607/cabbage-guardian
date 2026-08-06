@@ -23,7 +23,7 @@
     </view>
     <view class="detail-section row-section">
       <view class="detail-label">奖励规则</view>
-      <view class="detail-value reward-text">确认后 +1 颗白菜</view>
+      <view class="detail-value reward-text">完成打卡后 +1 颗白菜</view>
     </view>
     <view wx:if="{{task.resourceSnapshot}}" class="poem-section">
       <view class="detail-label">学习资源</view>

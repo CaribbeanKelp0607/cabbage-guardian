@@ -5,7 +5,10 @@
   <block wx:if="{{role==='father'||role==='mother'}}">
     <view class="card editor">
       <view class="editor-title">{{editingId?'修改任务':'新增任务'}}</view>
-      <button wx:if="{{!editingId}}" class="resource-button" bindtap="goResources">从资源库选择必背古诗词</button>
+      <view wx:if="{{!editingId}}" class="resource-buttons">
+        <button class="resource-button" data-subject="chinese" bindtap="goResources">从语文资料库选择</button>
+        <button class="resource-button english-resource-button" data-subject="english" bindtap="goResources">从英语单词卡选择</button>
+      </view>
       <input placeholder="例如：阅读 20 分钟" value="{{title}}" data-k="title" bindinput="i"/>
       <textarea placeholder="学习要求（可选）" value="{{detail}}" data-k="detail" bindinput="i"/>
       <view class="muted">同名任务当天不会重复创建；打卡后不可修改或删除。</view>
@@ -25,16 +28,13 @@
           <view class="muted detail">{{item.detail}}</view>
           <view class="detail-entry">查看详情 ›</view>
         </view>
-        <text class="state {{item.status}}">{{item.status==='todo'?'待打卡':item.status==='submitted'?'待确认':'已完成'}}</text>
+        <text class="state {{item.status}}">{{item.status==='done'?'已完成':'待打卡'}}</text>
       </view>
       <view wx:if="{{item.status==='todo'}}" class="item-actions">
         <button class="edit-button" bindtap="edit" data-id="{{item.id}}">编辑</button>
         <button class="delete-button" bindtap="remove" data-id="{{item.id}}" loading="{{deletingId===item.id}}" disabled="{{deletingId!==''}}">删除</button>
       </view>
-      <view wx:elif="{{item.status==='submitted'}}" class="pending-actions">
-        <button class="confirm-task-button" bindtap="confirmTask" data-id="{{item.id}}" loading="{{confirmingId===item.id}}" disabled="{{confirmingId!==''}}">确认并奖励白菜</button>
-      </view>
-      <view wx:else class="locked">已确认任务不可修改或删除</view>
+      <view wx:else class="locked">已完成任务不可修改或删除</view>
     </view>
   </block>
 
@@ -51,7 +51,7 @@
           <view class="muted detail">{{item.detail}}</view>
           <view class="detail-entry">查看详情 ›</view>
         </view>
-        <text class="state {{item.status}}">{{item.status==='todo'?'待打卡':item.status==='submitted'?'待确认':'已完成'}}</text>
+        <text class="state {{item.status}}">{{item.status==='done'?'已完成':'待打卡'}}</text>
       </view>
     </view>
   </block>

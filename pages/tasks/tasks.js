@@ -8,7 +8,6 @@ Page({
     detail: '',
     saving: false,
     deletingId: '',
-    confirmingId: '',
     editingId: '',
     tasks: [],
     role: '',
@@ -58,7 +57,8 @@ Page({
   cancelEdit() {
     this.setData({ editingId: '', title: '', detail: '' })
   },
-  goResources() {
+  goResources(e) {
+    getApp().globalData.resourceSubject = e.currentTarget.dataset.subject || 'chinese'
     wx.switchTab({ url: '/pages/resources/resources' })
   },
   showTaskDetail(e) {
@@ -88,29 +88,6 @@ Page({
           this.load()
         }).catch(e => {
           this.setData({ deletingId: '' })
-          wx.showToast({ title: message(e), icon: 'none' })
-        })
-      }
-    })
-  },
-  confirmTask(e) {
-    const id = e.currentTarget.dataset.id
-    const task = this.data.tasks.find(item => item.id === id)
-    if (!task || task.status !== 'submitted' || this.data.confirmingId) return
-    wx.showModal({
-      title: '确认打卡',
-      content: `确认孩子已完成“${task.title}”吗？确认后奖励一颗白菜。`,
-      confirmText: '确认完成',
-      confirmColor: '#4d9a83',
-      success: result => {
-        if (!result.confirm) return
-        this.setData({ confirmingId: id })
-        s.confirm(id).then(x => {
-          wx.showToast({ title: x && x.duplicate ? '任务已经确认' : '确认成功，白菜 +1' })
-          this.setData({ confirmingId: '' })
-          this.load()
-        }).catch(e => {
-          this.setData({ confirmingId: '' })
           wx.showToast({ title: message(e), icon: 'none' })
         })
       }

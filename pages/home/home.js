@@ -52,7 +52,6 @@ Page({
     periodWord: '今日',
     historyUnavailable: false,
     submittingId: '',
-    confirmingId: '',
     editingHistoryId: '',
     editTitle: '',
     editDetail: '',
@@ -98,7 +97,6 @@ Page({
           historyUnavailable: true,
           ready: true,
           submittingId: '',
-          confirmingId: ''
         })
         wx.showToast({ title: '看板云函数未更新', icon: 'none' })
         return
@@ -124,10 +122,9 @@ Page({
         historyUnavailable: false,
         ready: true,
         submittingId: '',
-        confirmingId: ''
       })
     }).catch(e => {
-      this.setData({ ready: false, submittingId: '', confirmingId: '' })
+      this.setData({ ready: false, submittingId: '' })
       wx.showToast({ title: message(e), icon: 'none' })
     })
   },
@@ -212,27 +209,11 @@ Page({
     if (!id || this.data.submittingId) return
     this.setData({ submittingId: id })
     s.submit(id).then(result => {
-      const title = result && result.status === 'done'
-        ? '任务已经确认'
-        : result && result.duplicate
-          ? '已提交，等待确认'
-          : '已提交，等待家长确认'
+      const title = result && result.duplicate ? '任务已经完成' : '打卡成功，白菜 +1'
       wx.showToast({ title, icon: 'none' })
       this.load(this.data.selectedDate)
     }).catch(e => {
       this.setData({ submittingId: '' })
-      wx.showToast({ title: message(e), icon: 'none' })
-    })
-  },
-  confirm(e) {
-    const id = e.currentTarget.dataset.id
-    if (!id || this.data.confirmingId) return
-    this.setData({ confirmingId: id })
-    s.confirm(id).then(result => {
-      wx.showToast({ title: result && result.duplicate ? '任务已经确认' : '确认成功，白菜 +1' })
-      this.load(this.data.selectedDate)
-    }).catch(e => {
-      this.setData({ confirmingId: '' })
       wx.showToast({ title: message(e), icon: 'none' })
     })
   }

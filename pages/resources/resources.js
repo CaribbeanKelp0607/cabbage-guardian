@@ -20,7 +20,10 @@ Page({
     templates: ['朗读', '背诵', '默写']
   },
   onShow() {
-    this.load()
+    const app = getApp()
+    const subject = app.globalData.resourceSubject || this.data.subject
+    app.globalData.resourceSubject = ''
+    this.load(subject)
   },
   categoryLabel(id, categories) {
     const category = (categories || []).find(item => item.id === id)
