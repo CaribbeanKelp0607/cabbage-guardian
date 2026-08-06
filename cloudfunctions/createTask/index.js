@@ -6,7 +6,9 @@ const db = cloud.database()
 const templates = {
   '朗读': title => `朗读《${title}》至少 2 遍，注意停顿和节奏。`,
   '背诵': title => `背诵《${title}》，请家长抽查背诵情况。`,
-  '默写': title => `默写《${title}》，完成后检查错别字和标点。`
+  '默写': title => `默写《${title}》，完成后检查错别字和标点。`,
+  '拼读': title => `朗读并拼读单词 ${title} 至少 3 遍，注意发音。`,
+  '拼写': title => `看中文或听读音，拼写单词 ${title} 3 次。`
 }
 
 exports.main = async ({ title, detail, requestId, resourceId, taskType } = {}) => {
@@ -19,9 +21,9 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType } = {}) =
 
   let resourceSnapshot = null
   if (resourceId) {
-    if (!templates[taskType]) throw new Error('请选择朗读、背诵或默写')
+    if (!templates[taskType]) throw new Error('请选择可用的任务类型')
     const resource = (await db.collection('learningResources').doc(resourceId).get()).data
-    if (!resource || !resource.enabled || resource.category !== 'poem') throw new Error('学习资源不可用')
+    if (!resource || !resource.enabled) throw new Error('学习资源不可用')
     title = `${taskType}《${resource.title}》`
     detail = templates[taskType](resource.title)
     resourceSnapshot = {

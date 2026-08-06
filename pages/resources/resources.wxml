@@ -1,38 +1,66 @@
 <view class="page resource-page">
-  <view class="eyebrow">统编版 · 三年级上册</view>
-  <view class="title">语文必背古诗词</view>
-  <view class="intro">选择一首古诗查看全文；爸爸妈妈可将朗读、背诵或默写加入今日打卡。</view>
+  <view class="library-tabs">
+    <view class="library-tab {{subject==='chinese'?'active':''}}" data-subject="chinese" bindtap="setLibrary">语文资料库</view>
+    <view class="library-tab {{subject==='english'?'active':''}}" data-subject="english" bindtap="setLibrary">英语资料库</view>
+  </view>
+  <view class="eyebrow">{{library.eyebrow}}</view>
+  <view class="title">{{library.title}}</view>
+  <view class="intro">{{library.intro}}</view>
+
+  <view wx:if="{{role==='father'||role==='mother'}}" class="resource-tools">
+    <button class="refresh-button" bindtap="initResources" loading="{{initializing}}" disabled="{{initializing}}">{{initializing?'更新中':'更新资源库'}}</button>
+    <view class="resource-count">共 {{resources.length}} 项</view>
+  </view>
+
+  <scroll-view wx:if="{{resources.length}}" class="category-scroll" scroll-x="true" show-scrollbar="false">
+    <view class="category-row">
+      <view wx:for="{{categories}}" wx:key="id" class="category-tab {{activeCategory===item.id?'active':''}}" data-id="{{item.id}}" bindtap="setCategory">{{item.label}}</view>
+    </view>
+  </scroll-view>
 
   <view wx:if="{{ready&&resources.length===0}}" class="empty-resource">
     <view class="empty-icon">📚</view>
-    <view class="empty-title">{{resourceError?'资源服务尚未部署':'古诗词资源库尚未初始化'}}</view>
-    <view class="muted">{{resourceError?'请先部署 getLearningResources 云函数，再初始化资源库。':'初始化后可创建古诗词打卡任务。'}}</view>
+    <view class="empty-title">{{resourceError?'资源服务尚未部署':'资料库尚未初始化'}}</view>
+    <view class="muted">{{resourceError?'请先部署 getLearningResources 云函数，再初始化资源库。':'初始化后可创建学习打卡任务。'}}</view>
     <button wx:if="{{role==='father'||role==='mother'}}" class="button" bindtap="initResources" loading="{{initializing}}" disabled="{{initializing}}">{{initializing?'加载中':'初始化资源库'}}</button>
     <view wx:else class="waiting">请让爸爸或妈妈先初始化资源库</view>
   </view>
 
-  <view class="resource-card" wx:for="{{resources}}" wx:key="_id" bindtap="openResource" data-id="{{item._id||item.id}}">
-    <view class="resource-icon">诗</view>
+  <view class="resource-card" wx:for="{{filteredResources}}" wx:key="_id" bindtap="openResource" data-id="{{item._id||item.id}}">
+    <image wx:if="{{item.image}}" class="resource-image" src="{{item.image}}" mode="aspectFill" />
+    <view wx:else class="resource-icon">{{item.icon}}</view>
     <view class="resource-copy">
       <view class="resource-title">{{item.title}}</view>
-      <view class="resource-meta">{{item.dynasty}} · {{item.author}} · 第 {{item.unit}} 单元</view>
+      <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'}}"> · 第 {{item.unit}} 单元</text></view>
       <view class="resource-preview">{{item.preview||item.content}}</view>
     </view>
     <view class="resource-arrow">›</view>
   </view>
 
+  <view wx:if="{{ready&&resources.length&&filteredResources.length===0}}" class="empty-category">
+    <view>该分类暂时没有资源</view>
+    <view wx:if="{{role==='father'||role==='mother'}}" class="muted">请点击上方“更新资源库”同步最新内容。</view>
+  </view>
+
   <view wx:if="{{resourceVisible}}" class="resource-mask" bindtap="closeResource">
     <view class="resource-dialog" catchtap="stop">
       <view class="dialog-top">
-        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.dynasty}} · {{selectedResource.author}}</view></view>
+        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
         <view class="dialog-close" bindtap="closeResource">×</view>
       </view>
-      <view class="poem-text">{{selectedResource.content}}</view>
+      <view wx:if="{{selectedResource.subject==='english'}}" class="word-card">
+        <image class="word-illustration" src="{{selectedResource.image}}" mode="widthFix" />
+        <view class="word-translation">{{selectedResource.translation}}</view>
+        <view class="word-phonetic">{{selectedResource.phonetic}}</view>
+        <view class="word-example">{{selectedResource.example}}</view>
+        <view class="word-example-translation">{{selectedResource.exampleTranslation}}</view>
+      </view>
+      <view wx:else class="resource-text {{selectedResource.category==='poem'?'poem-text':''}}">{{selectedResource.content}}</view>
       <view wx:if="{{role==='father'||role==='mother'}}" class="template-area">
         <view class="template-title">选择任务类型</view>
         <view class="template-buttons"><button wx:for="{{templates}}" wx:key="*this" class="template-button" data-type="{{item}}" bindtap="createTask" loading="{{creatingType===item}}" disabled="{{creatingType!==''}}">{{item}}</button></view>
       </view>
-      <view wx:else class="child-read">背诵完成后，请到“今天”页提交打卡。</view>
+      <view wx:else class="child-read">学习完成后，请到“今天”页提交打卡。</view>
     </view>
   </view>
 </view>
