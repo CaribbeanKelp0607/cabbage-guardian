@@ -21,7 +21,7 @@
       <view class="progress-fill" style="width:{{progressPercent}}%"></view>
     </view>
     <view class="garden-line">
-      <text>菜地共有 {{cabbages}} 颗白菜</text>
+      <text>菜地共有 {{cabbages}} 颗蔬菜</text>
       <text>连续 {{streak}} 天</text>
     </view>
   </view>
@@ -45,7 +45,7 @@
   <view class="section-head">
     <view>
       <view class="section-title">{{periodWord}}打卡任务</view>
-      <view class="section-sub">{{selectedIsToday?'完成打卡即可获得 1 颗白菜':'历史任务与打卡结果'}}</view>
+      <view class="section-sub">{{selectedIsToday?'完成打卡即可选择种下 1 颗蔬菜':'历史任务与打卡结果'}}</view>
     </view>
     <view class="task-count">{{completedTasks}} / {{totalTasks}}</view>
   </view>
@@ -82,7 +82,7 @@
     </view>
   </view>
 
-  <view wx:if="{{selectedIsToday}}" class="tip">🐻 23:00 若还有未完成任务，小熊只会偷走一颗白菜。明天再一起赢回来！</view>
+  <view wx:if="{{selectedIsToday}}" class="tip">🐻 23:00 若还有未完成任务，小熊会随机偷走一颗蔬菜。明天再一起赢回来！</view>
   <view wx:else class="history-tip">历史任务支持补打卡；待打卡任务可由爸爸妈妈修改</view>
 
   <view wx:if="{{editingHistoryId}}" class="edit-mask" bindtap="cancelHistoryEdit">

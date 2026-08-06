@@ -41,6 +41,14 @@ const calendarFor = selectedDate => {
   return { days, canNextWeek: start < currentStart }
 }
 const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
+const vegetableChoices = [
+  { type: 'corn', label: '玉米 🌽' },
+  { type: 'carrot', label: '胡萝卜 🥕' },
+  { type: 'tomato', label: '番茄 🍅' },
+  { type: 'watermelon', label: '西瓜 🍉' },
+  { type: 'cabbage', label: '白菜 🥬' },
+  { type: 'potato', label: '土豆 🥔' }
+]
 
 Page({
   data: {
@@ -284,14 +292,30 @@ Page({
     if (!evidences.length) return wx.showToast({ title: '请先上传图片、录音或视频', icon: 'none' })
     this.setData({ submittingId: id })
     s.submit(id, evidences).then(result => {
-      const title = result && result.duplicate ? '任务已经完成' : '打卡成功，白菜 +1'
-      wx.showToast({ title, icon: 'none' })
       if (this._draftEvidences) delete this._draftEvidences[id]
       this.setData({ detailVisible: false, detailTask: {} })
-      this.load(this.data.selectedDate)
+      if (result && result.duplicate) {
+        wx.showToast({ title: '任务已经完成', icon: 'none' })
+        this.load(this.data.selectedDate)
+        return
+      }
+      this.chooseVegetableReward()
     }).catch(e => {
       this.setData({ submittingId: '' })
       wx.showToast({ title: message(e), icon: 'none' })
+    })
+  },
+  chooseVegetableReward() {
+    wx.showActionSheet({ itemList: vegetableChoices.map(item => item.label) }).then(result => {
+      const choice = vegetableChoices[result.tapIndex]
+      if (!choice) throw new Error('请选择蔬菜')
+      return s.plantVegetable(choice.type).then(() => choice)
+    }).then(choice => {
+      wx.showToast({ title: `种下${choice.label}` })
+      this.load(this.data.selectedDate)
+    }).catch(() => {
+      wx.showToast({ title: '奖励已保留，可到菜地选择', icon: 'none' })
+      this.load(this.data.selectedDate)
     })
   }
 })

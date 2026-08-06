@@ -26,7 +26,7 @@ Component({
       const map = {
         todo: ['待打卡', '上传图片、录音或视频后可完成打卡'],
         submitted: ['待打卡', '上传凭证后可完成打卡'],
-        done: ['已完成', '已上传打卡凭证并奖励一颗白菜']
+        done: ['已完成', '已上传打卡凭证，可选择种下一颗蔬菜']
       }
       const current = map[status] || ['状态未知', '请刷新任务数据']
       this.setData({

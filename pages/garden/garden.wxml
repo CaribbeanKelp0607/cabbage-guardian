@@ -1,1 +1,48 @@
-<view class="page"><view class="eyebrow">一点点努力，长成一片菜地</view><view class="title">我的白菜菜地</view><view class="card"><view class="big">🥬 {{cabbages}}</view><view class="muted">已经守护 {{cabbages}} 颗白菜</view><view class="field"><text wx:for="{{items}}" wx:key="index">🥬</text></view></view><view class="card"><view class="big">🔥 {{streak}} 天</view><view class="muted">连续完成学习任务</view></view></view>
+<view class="page garden-page">
+  <view class="eyebrow">完成任务，亲手种下一颗菜</view>
+  <view class="garden-title-row">
+    <view class="title">我的快乐菜园</view>
+    <view class="total-pill">{{total}} 颗蔬菜</view>
+  </view>
+
+  <view class="garden-scene">
+    <image class="garden-background" src="/assets/garden/garden-background.jpg" mode="widthFix" />
+    <view class="plot-grid">
+      <view class="vegetable-plot" wx:for="{{plots}}" wx:key="type">
+        <view class="vegetable-items">
+          <text class="vegetable" wx:for="{{item.items}}" wx:for-item="plantItem" wx:key="index">{{item.emoji}}</text>
+        </view>
+        <view wx:if="{{item.count}}" class="plot-count">{{item.name}} × {{item.count}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{role === 'child' && pendingPlants > 0}}" class="reward-card">
+    <view class="reward-title">你有 {{pendingPlants}} 颗蔬菜可以种</view>
+    <view class="reward-hint">选择喜欢的蔬菜，它会马上出现在菜地里</view>
+    <view class="vegetable-choices">
+      <button
+        wx:for="{{plots}}"
+        wx:key="type"
+        class="vegetable-choice"
+        data-type="{{item.type}}"
+        bindtap="plant"
+        disabled="{{planting}}"
+      >
+        <text class="choice-emoji">{{item.emoji}}</text>
+        <text>{{item.name}}</text>
+      </button>
+    </view>
+  </view>
+
+  <view wx:elif="{{role === 'child'}}" class="empty-reward">完成一次打卡任务，就可以选择种下一颗蔬菜。</view>
+  <view wx:else class="empty-reward">孩子完成任务后，可以在这里选择并种下蔬菜。</view>
+
+  <view class="bear-card">
+    <view class="bear-icon">🐻</view>
+    <view>
+      <view class="bear-title">小熊正在虎视眈眈</view>
+      <view class="bear-text">如果今天还有任务没有完成，晚上 23:00 它会随机偷走一颗已经种下的菜。</view>
+    </view>
+  </view>
+</view>
