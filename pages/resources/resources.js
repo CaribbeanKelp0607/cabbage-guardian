@@ -34,6 +34,9 @@ Page({
     this.setData({ filteredResources: activeCategory === 'all' ? resources : resources.filter(item => item.category === activeCategory) })
   },
   load(subject = this.data.subject) {
+    const activeCategory = subject === 'english' && this.data.subject !== 'english'
+      ? 'joinin'
+      : this.data.activeCategory
     s.get().then(dashboard => {
       this.setData({ role: dashboard.role, ready: false, resourceError: false })
       return s.getResources(subject)
@@ -45,10 +48,11 @@ Page({
         resources: (result.resources || []).map(resource => ({
           ...resource,
           categoryLabel: this.categoryLabel(resource.category, result.categories),
-          icon: ({ poem: '诗', text: '文', classical: '古', language: '积', block: 'A' })[resource.category] || '学',
+          icon: ({ poem: '诗', text: '文', classical: '古', language: '积', block: 'A', joinin: '英' })[resource.category] || '学',
           preview: resource.content.replace(/\n/g, ' / ')
         })),
         categories,
+        activeCategory,
         templates: result.templates || ['朗读', '背诵', '默写'],
         ready: true,
         initializing: false,

@@ -31,7 +31,7 @@
     <view wx:else class="resource-icon">{{item.icon}}</view>
     <view class="resource-copy">
       <view class="resource-title">{{item.title}}</view>
-      <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'}}"> · 第 {{item.unit}} 单元</text></view>
+      <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.series}}"> · {{item.unitLabel}}</text><text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'}}"> · 第 {{item.unit}} 单元</text></view>
       <view class="resource-preview">{{item.preview||item.content}}</view>
     </view>
     <view class="resource-arrow">›</view>
@@ -45,16 +45,17 @@
   <view wx:if="{{resourceVisible}}" class="resource-mask" bindtap="closeResource">
     <view class="resource-dialog" catchtap="stop">
       <view class="dialog-top">
-        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
+        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.series}}"> · {{selectedResource.unitLabel}}</text><text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
         <view class="dialog-close" bindtap="closeResource">×</view>
       </view>
-      <view wx:if="{{selectedResource.subject==='english'}}" class="word-card">
+      <view wx:if="{{selectedResource.subject==='english'&&selectedResource.image}}" class="word-card">
         <image class="word-illustration" src="{{selectedResource.image}}" mode="widthFix" />
         <view class="word-translation">{{selectedResource.translation}}</view>
         <view class="word-phonetic">{{selectedResource.phonetic}}</view>
         <view class="word-example">{{selectedResource.example}}</view>
         <view class="word-example-translation">{{selectedResource.exampleTranslation}}</view>
       </view>
+      <view wx:elif="{{selectedResource.subject==='english'}}" class="resource-text word-list-text">{{selectedResource.content}}</view>
       <view wx:else class="resource-text {{selectedResource.category==='poem'?'poem-text':''}}">{{selectedResource.content}}</view>
       <view wx:if="{{role==='father'||role==='mother'}}" class="template-area">
         <view class="template-title">选择任务类型</view>

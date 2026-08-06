@@ -16,10 +16,11 @@ exports.main = async ({ subject = 'chinese', grade = 3, volume = 'first', catego
     resources: result.data.sort((a, b) => a.unit - b.unit || a.title.localeCompare(b.title, 'zh-CN')),
     templates: english ? ['朗读', '拼读', '拼写'] : ['朗读', '背诵', '默写'],
     library: english
-      ? { subject: 'english', eyebrow: '英语启蒙 · 我的世界', title: '我的世界英语单词卡', intro: '前 10 页方块类单词；查看单词、音标和例句，创建拼读或拼写打卡。' }
+      ? { subject: 'english', eyebrow: '英语学习资源', title: '英语资源库', intro: '三上单词表按 Welcome、Unit 01–06 和 Plays 分单元整理；也可学习我的世界单词卡。' }
       : { subject: 'chinese', eyebrow: '统编版 · 三年级上册', title: '语文必背资源库', intro: '按内容选择资源查看全文；爸爸妈妈可将朗读、背诵或默写加入今日打卡。' },
     categories: english ? [
-      { id: 'block', label: '方块类' }
+      { id: 'joinin', label: '三上单词表' },
+      { id: 'block', label: '我的世界单词卡' }
     ] : [
       { id: 'poem', label: '古诗词' },
       { id: 'text', label: '课文' },
