@@ -10,7 +10,10 @@ const formatDate = value => {
 Component({
   properties: {
     visible: { type: Boolean, value: false },
-    task: { type: Object, value: {} }
+    task: { type: Object, value: {} },
+    role: { type: String, value: '' },
+    uploadingTaskId: { type: String, value: '' },
+    recordingTaskId: { type: String, value: '' }
   },
   data: {
     dateText: '未记录',
@@ -21,9 +24,9 @@ Component({
     task(task) {
       const status = task && task.status
       const map = {
-        todo: ['待打卡', '孩子完成后可提交打卡'],
-        submitted: ['待确认', '孩子已提交，等待爸爸或妈妈确认'],
-        done: ['已完成', '家长已确认，已奖励一颗白菜']
+        todo: ['待打卡', '上传图片、录音或视频后可完成打卡'],
+        submitted: ['待打卡', '上传凭证后可完成打卡'],
+        done: ['已完成', '已上传打卡凭证并奖励一颗白菜']
       }
       const current = map[status] || ['状态未知', '请刷新任务数据']
       this.setData({
@@ -34,6 +37,18 @@ Component({
     }
   },
   methods: {
+    chooseImage() {
+      this.triggerEvent('chooseimage', { id: this.properties.task.id })
+    },
+    chooseVideo() {
+      this.triggerEvent('choosevideo', { id: this.properties.task.id })
+    },
+    startRecording() {
+      this.triggerEvent('startrecording', { id: this.properties.task.id })
+    },
+    stopRecording() {
+      this.triggerEvent('stoprecording')
+    },
     close() {
       this.triggerEvent('close')
     },

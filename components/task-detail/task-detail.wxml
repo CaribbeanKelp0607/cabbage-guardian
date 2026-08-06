@@ -30,6 +30,26 @@
       <view wx:if="{{task.resourceSnapshot.author}}" class="poem-meta">{{task.resourceSnapshot.dynasty}} · {{task.resourceSnapshot.author}}</view>
       <view class="poem-content">{{task.resourceSnapshot.content}}</view>
     </view>
+    <view wx:if="{{task.evidences&&task.evidences.length}}" class="evidence-section">
+      <view class="detail-label">打卡凭证</view>
+      <view wx:for="{{task.evidences}}" wx:key="fileID" class="evidence-item">
+        <view class="evidence-type">{{item.type==='image'?'图片':item.type==='audio'?'录音':'视频'}}</view>
+        <image wx:if="{{item.type==='image'}}" class="evidence-image" src="{{item.fileID}}" mode="widthFix"/>
+        <audio wx:elif="{{item.type==='audio'}}" class="evidence-audio" src="{{item.fileID}}" controls/>
+        <video wx:else class="evidence-video" src="{{item.fileID}}" controls object-fit="contain"/>
+      </view>
+    </view>
+    <view wx:if="{{role==='child'&&task.status!=='done'}}" class="upload-section">
+      <view class="detail-label">上传打卡凭证</view>
+      <view class="upload-hint">上传图片、录音或视频中的任一种后，将自动完成打卡</view>
+      <view class="upload-actions">
+        <button class="upload-button" bindtap="chooseImage" disabled="{{uploadingTaskId!==''||recordingTaskId!==''}}">图片</button>
+        <button wx:if="{{recordingTaskId===task.id}}" class="upload-button recording" bindtap="stopRecording">停止录音</button>
+        <button wx:else class="upload-button" bindtap="startRecording" disabled="{{uploadingTaskId!==''||recordingTaskId!==''}}">录音</button>
+        <button class="upload-button" bindtap="chooseVideo" disabled="{{uploadingTaskId!==''||recordingTaskId!==''}}">视频</button>
+      </view>
+      <view wx:if="{{uploadingTaskId===task.id}}" class="upload-hint">正在上传凭证…</view>
+    </view>
 
     <button class="detail-done" bindtap="close">我知道了</button>
   </view>

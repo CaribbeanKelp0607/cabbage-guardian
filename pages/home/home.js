@@ -52,6 +52,8 @@ Page({
     periodWord: '今日',
     historyUnavailable: false,
     submittingId: '',
+    uploadingTaskId: '',
+    recordingTaskId: '',
     editingHistoryId: '',
     editTitle: '',
     editDetail: '',
@@ -62,6 +64,19 @@ Page({
   },
   onLoad() {
     this.setData({ selectedDate: todayKey() })
+    this._draftEvidences = {}
+    this.recorder = wx.getRecorderManager && wx.getRecorderManager()
+    if (this.recorder) {
+      this.recorder.onStop(result => {
+        const taskId = this.data.recordingTaskId
+        this.setData({ recordingTaskId: '' })
+        if (taskId && result.tempFilePath) this.uploadEvidence(taskId, 'audio', result.tempFilePath)
+      })
+      this.recorder.onError(() => {
+        this.setData({ recordingTaskId: '' })
+        wx.showToast({ title: '录音失败，请检查麦克风权限', icon: 'none' })
+      })
+    }
   },
   onShow() {
     this.load(this.data.selectedDate || todayKey())
@@ -101,7 +116,7 @@ Page({
         wx.showToast({ title: '看板云函数未更新', icon: 'none' })
         return
       }
-      const tasks = (x.tasks || []).map(task => ({ ...task, id: task.id || task._id }))
+      const tasks = this.decorateTasks((x.tasks || []).map(task => ({ ...task, id: task.id || task._id })))
       const completedTasks = x.completedTasks == null
         ? tasks.filter(task => task.status === 'done').length
         : x.completedTasks
@@ -148,6 +163,61 @@ Page({
   },
   closeTaskDetail() {
     this.setData({ detailVisible: false, detailTask: {} })
+  },
+  decorateTasks(tasks) {
+    return tasks.map(task => {
+      const draftEvidence = (this._draftEvidences && this._draftEvidences[task.id]) || []
+      const names = { image: '图片', audio: '录音', video: '视频' }
+      return {
+        ...task,
+        draftEvidence,
+        hasDraftEvidence: draftEvidence.length > 0,
+        draftEvidenceText: draftEvidence.length ? `已上传：${draftEvidence.map(item => names[item.type]).join('、')}` : '请至少上传一种打卡凭证'
+      }
+    })
+  },
+  saveDraftEvidence(taskId, evidence) {
+    const current = (this._draftEvidences && this._draftEvidences[taskId]) || []
+    this._draftEvidences = { ...(this._draftEvidences || {}), [taskId]: current.concat(evidence).slice(0, 3) }
+    const tasks = this.decorateTasks(this.data.tasks)
+    const detailTask = this.data.detailTask && this.data.detailTask.id === taskId
+      ? tasks.find(item => item.id === taskId)
+      : this.data.detailTask
+    this.setData({ tasks, detailTask })
+  },
+  chooseImage(e) {
+    const taskId = e.detail.id || e.currentTarget.dataset.id
+    wx.chooseMedia({ count: 1, mediaType: ['image'], sourceType: ['album', 'camera'] }).then(result => {
+      const file = result.tempFiles && result.tempFiles[0]
+      if (file) this.uploadEvidence(taskId, 'image', file.tempFilePath)
+    }).catch(() => {})
+  },
+  chooseVideo(e) {
+    const taskId = e.detail.id || e.currentTarget.dataset.id
+    wx.chooseVideo({ sourceType: ['album', 'camera'], compressed: true, maxDuration: 60, success: result => this.uploadEvidence(taskId, 'video', result.tempFilePath) })
+  },
+  startRecording(e) {
+    const taskId = e.detail.id || e.currentTarget.dataset.id
+    if (!this.recorder || this.data.recordingTaskId) return
+    this.setData({ recordingTaskId: taskId })
+    this.recorder.start({ format: 'mp3', duration: 60000 })
+  },
+  stopRecording() {
+    if (this.recorder && this.data.recordingTaskId) this.recorder.stop()
+  },
+  uploadEvidence(taskId, type, filePath) {
+    if (!taskId || !filePath || this.data.uploadingTaskId) return
+    this.setData({ uploadingTaskId: taskId })
+    const suffix = (filePath.match(/\.[a-zA-Z0-9]+$/) || ['.bin'])[0]
+    const cloudPath = `checkins/${taskId}/${Date.now()}-${type}${suffix}`
+    wx.cloud.uploadFile({ cloudPath, filePath }).then(result => {
+      this.saveDraftEvidence(taskId, { type, fileID: result.fileID })
+      this.setData({ uploadingTaskId: '' })
+      this.finishCheckin(taskId)
+    }).catch(() => {
+      this.setData({ uploadingTaskId: '' })
+      wx.showToast({ title: '上传失败，请重试', icon: 'none' })
+    })
   },
   editHistoryTask(e) {
     const id = e.currentTarget.dataset.id
@@ -205,12 +275,19 @@ Page({
   },
   noop() {},
   submit(e) {
-    const id = e.currentTarget.dataset.id
+    const id = (e.detail && e.detail.id) || (e.currentTarget && e.currentTarget.dataset.id)
+    this.finishCheckin(id)
+  },
+  finishCheckin(id) {
     if (!id || this.data.submittingId) return
+    const evidences = (this._draftEvidences && this._draftEvidences[id]) || []
+    if (!evidences.length) return wx.showToast({ title: '请先上传图片、录音或视频', icon: 'none' })
     this.setData({ submittingId: id })
-    s.submit(id).then(result => {
+    s.submit(id, evidences).then(result => {
       const title = result && result.duplicate ? '任务已经完成' : '打卡成功，白菜 +1'
       wx.showToast({ title, icon: 'none' })
+      if (this._draftEvidences) delete this._draftEvidences[id]
+      this.setData({ detailVisible: false, detailTask: {} })
       this.load(this.data.selectedDate)
     }).catch(e => {
       this.setData({ submittingId: '' })
