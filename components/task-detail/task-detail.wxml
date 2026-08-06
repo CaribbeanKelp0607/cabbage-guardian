@@ -25,6 +25,11 @@
       <view class="detail-label">奖励规则</view>
       <view class="detail-value reward-text">确认后 +1 颗白菜</view>
     </view>
+    <view wx:if="{{task.resourceSnapshot}}" class="poem-section">
+      <view class="detail-label">古诗原文</view>
+      <view class="poem-meta">{{task.resourceSnapshot.dynasty}} · {{task.resourceSnapshot.author}}</view>
+      <view class="poem-content">{{task.resourceSnapshot.content}}</view>
+    </view>
 
     <button class="detail-done" bindtap="close">我知道了</button>
   </view>

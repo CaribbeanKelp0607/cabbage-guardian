@@ -58,6 +58,9 @@ Page({
   cancelEdit() {
     this.setData({ editingId: '', title: '', detail: '' })
   },
+  goResources() {
+    wx.switchTab({ url: '/pages/resources/resources' })
+  },
   showTaskDetail(e) {
     const id = e.currentTarget.dataset.id
     const task = this.data.tasks.find(item => item.id === id)

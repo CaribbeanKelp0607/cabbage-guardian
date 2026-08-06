@@ -5,6 +5,7 @@
   <block wx:if="{{role==='father'||role==='mother'}}">
     <view class="card editor">
       <view class="editor-title">{{editingId?'修改任务':'新增任务'}}</view>
+      <button wx:if="{{!editingId}}" class="resource-button" bindtap="goResources">从资源库选择必背古诗词</button>
       <input placeholder="例如：阅读 20 分钟" value="{{title}}" data-k="title" bindinput="i"/>
       <textarea placeholder="学习要求（可选）" value="{{detail}}" data-k="detail" bindinput="i"/>
       <view class="muted">同名任务当天不会重复创建；打卡后不可修改或删除。</view>
