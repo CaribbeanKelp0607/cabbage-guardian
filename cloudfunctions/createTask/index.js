@@ -11,7 +11,15 @@ const templates = {
   '拼写': title => `看中文或听读音，拼写单词 ${title} 3 次。`
 }
 
-exports.main = async ({ title, detail, requestId, resourceId, taskType } = {}) => {
+const today = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
+const validDate = value => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [year, month, day] = value.split('-').map(Number)
+  const parsed = new Date(Date.UTC(year, month - 1, day))
+  return parsed.toISOString().slice(0, 10) === value
+}
+
+exports.main = async ({ title, detail, requestId, resourceId, taskType, date } = {}) => {
   const { OPENID } = cloud.getWXContext()
   const familyResult = await db.collection('families').where({ 'members.openid': OPENID }).get()
   if (!familyResult.data.length) throw new Error('未加入家庭')
@@ -44,8 +52,11 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType } = {}) =
   }
   if (!title) throw new Error('请填写作业名称')
 
-  const date = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
-  const same = await db.collection('dailyTasks').where({ familyId: family._id, date, title }).limit(1).get()
+  const taskDate = String(date || today())
+  if (!validDate(taskDate)) throw new Error('任务日期无效')
+  if (taskDate < today()) throw new Error('不能创建昨天或更早的任务')
+
+  const same = await db.collection('dailyTasks').where({ familyId: family._id, date: taskDate, title }).limit(1).get()
   if (same.data.length) return { ok: true, duplicate: true }
 
   const token = String(requestId || crypto.randomBytes(16).toString('hex'))
@@ -58,7 +69,7 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType } = {}) =
   await db.collection('dailyTasks').doc(taskId).set({
     data: {
       familyId: family._id,
-      date,
+      date: taskDate,
       title,
       detail,
       requestId: token,

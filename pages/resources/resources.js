@@ -1,6 +1,13 @@
 const s = require('../../utils/store')
 
 const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
+const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const dateLabel = value => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '请选择日期'
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return `${year}年${month}月${day}日 ${weekDays[date.getUTCDay()]}`
+}
 
 Page({
   data: {
@@ -17,6 +24,9 @@ Page({
     resourceError: false,
     selectedResource: {},
     resourceVisible: false,
+    today: '',
+    resourceTaskDate: '',
+    resourceTaskDateLabel: '请选择日期',
     templates: ['朗读', '背诵', '默写']
   },
   onShow() {
@@ -38,7 +48,20 @@ Page({
       ? 'joinin'
       : this.data.activeCategory
     s.get().then(dashboard => {
-      this.setData({ role: dashboard.role, ready: false, resourceError: false })
+      const app = getApp()
+      const scheduledDate = app.globalData.scheduledTaskDate
+      const resourceTaskDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) && scheduledDate >= dashboard.date
+        ? scheduledDate
+        : dashboard.date
+      app.globalData.scheduledTaskDate = resourceTaskDate
+      this.setData({
+        role: dashboard.role,
+        today: dashboard.date,
+        resourceTaskDate,
+        resourceTaskDateLabel: dateLabel(resourceTaskDate),
+        ready: false,
+        resourceError: false
+      })
       return s.getResources(subject)
     }).then(result => {
       const categories = [{ id: 'all', label: '全部' }].concat(result.categories || [])
@@ -97,14 +120,21 @@ Page({
     if (!this.data.creatingType) this.setData({ resourceVisible: false, selectedResource: {} })
   },
   stop() {},
+  setResourceTaskDate(e) {
+    getApp().globalData.scheduledTaskDate = e.detail.value
+    this.setData({
+      resourceTaskDate: e.detail.value,
+      resourceTaskDateLabel: dateLabel(e.detail.value)
+    })
+  },
   createTask(e) {
     const taskType = e.currentTarget.dataset.type
     const resource = this.data.selectedResource
     if (!resource || !taskType || this.data.creatingType) return
     this.setData({ creatingType: taskType })
     const requestId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
-    s.add({ resourceId: resource._id || resource.id, taskType, requestId }).then(result => {
-      wx.showToast({ title: result.duplicate ? '今天已创建该任务' : '已加入今日任务', icon: 'none' })
+    s.add({ resourceId: resource._id || resource.id, taskType, requestId, date: this.data.resourceTaskDate }).then(result => {
+      wx.showToast({ title: result.duplicate ? '该日期已创建该任务' : '已创建任务', icon: 'none' })
       this.setData({ creatingType: '', resourceVisible: false, selectedResource: {} })
     }).catch(e => {
       this.setData({ creatingType: '' })

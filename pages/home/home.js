@@ -24,9 +24,7 @@ const weekStart = key => {
   return formatKey(date)
 }
 const calendarFor = selectedDate => {
-  const today = todayKey()
   const start = weekStart(selectedDate)
-  const currentStart = weekStart(today)
   const days = weekNames.map((week, index) => {
     const date = shiftDate(start, index)
     return {
@@ -34,11 +32,11 @@ const calendarFor = selectedDate => {
       week,
       day: parseKey(date).getUTCDate(),
       selected: date === selectedDate,
-      today: date === today,
-      future: date > today
+      today: date === todayKey(),
+      future: date > todayKey()
     }
   })
-  return { days, canNextWeek: start < currentStart }
+  return { days, canNextWeek: true }
 }
 const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
 const vegetableChoices = [
@@ -57,6 +55,7 @@ Page({
     calendarDays: [],
     canNextWeek: false,
     selectedIsToday: true,
+    selectedIsFuture: false,
     periodWord: '今日',
     historyUnavailable: false,
     submittingId: '',
@@ -92,13 +91,15 @@ Page({
   load(date) {
     const calendar = calendarFor(date)
     const selectedIsToday = date === todayKey()
+    const selectedIsFuture = date > todayKey()
     this.setData({
       ready: false,
       selectedDate: date,
       calendarDays: calendar.days,
       canNextWeek: calendar.canNextWeek,
       selectedIsToday,
-      periodWord: selectedIsToday ? '今日' : '当日',
+      selectedIsFuture,
+      periodWord: selectedIsFuture ? '未来' : selectedIsToday ? '今日' : '当日',
       historyUnavailable: false,
       editingHistoryId: '',
       editTitle: '',
@@ -131,9 +132,11 @@ Page({
       const totalTasks = x.totalTasks == null ? tasks.length : x.totalTasks
       const earnedToday = x.earnedToday == null ? completedTasks : x.earnedToday
       const progressPercent = totalTasks ? Math.round(completedTasks * 100 / totalTasks) : 0
-      const welcomeText = selectedIsToday
-        ? (x.role === 'child' ? '今天也要认真完成任务哦' : '查看孩子今天的打卡情况')
-        : `查看 ${x.dateLabel} 的打卡记录`
+      const welcomeText = selectedIsFuture
+        ? `查看 ${x.dateLabel} 的计划任务`
+        : selectedIsToday
+          ? (x.role === 'child' ? '今天也要认真完成任务哦' : '查看孩子今天的打卡情况')
+          : `查看 ${x.dateLabel} 的打卡记录`
       this.setData({
         ...x,
         tasks,
@@ -153,15 +156,13 @@ Page({
   },
   selectDate(e) {
     const date = e.currentTarget.dataset.date
-    if (!date || date > todayKey() || date === this.data.selectedDate) return
+    if (!date || date === this.data.selectedDate) return
     this.load(date)
   },
   changeWeek(e) {
     const delta = Number(e.currentTarget.dataset.delta)
-    if (delta > 0 && !this.data.canNextWeek) return
-    let date = shiftDate(this.data.selectedDate, delta * 7)
-    if (date > todayKey()) date = todayKey()
-    this.load(date)
+    if (!delta) return
+    this.load(shiftDate(this.data.selectedDate, delta * 7))
   },
   showTaskDetail(e) {
     const id = e.currentTarget.dataset.id

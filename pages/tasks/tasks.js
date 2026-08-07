@@ -1,6 +1,13 @@
 const s = require('../../utils/store')
 
 const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
+const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const dateLabel = value => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '请选择日期'
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+  return `${year}年${month}月${day}日 ${weekDays[date.getUTCDay()]}`
+}
 
 Page({
   data: {
@@ -9,6 +16,9 @@ Page({
     saving: false,
     deletingId: '',
     editingId: '',
+    today: '',
+    taskDate: '',
+    taskDateLabel: '请选择日期',
     tasks: [],
     role: '',
     detailVisible: false,
@@ -18,16 +28,31 @@ Page({
     this.load()
   },
   load() {
-    s.get().then(x => this.setData({
-      ...x,
-      tasks: (x.tasks || []).map(task => ({ ...task, id: task.id || task._id }))
-    })).catch(e => {
+    s.get().then(x => {
+      const app = getApp()
+      const scheduledDate = app.globalData.scheduledTaskDate
+      const taskDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) && scheduledDate >= x.date
+        ? scheduledDate
+        : x.date
+      app.globalData.scheduledTaskDate = taskDate
+      this.setData({
+        ...x,
+        today: x.date,
+        taskDate,
+        taskDateLabel: dateLabel(taskDate),
+        tasks: (x.tasks || []).map(task => ({ ...task, id: task.id || task._id }))
+      })
+    }).catch(e => {
       this.setData({ role: '' })
       wx.showToast({ title: message(e), icon: 'none' })
     })
   },
   i(e) {
     this.setData({ [e.currentTarget.dataset.k]: e.detail.value })
+  },
+  setTaskDate(e) {
+    getApp().globalData.scheduledTaskDate = e.detail.value
+    this.setData({ taskDate: e.detail.value, taskDateLabel: dateLabel(e.detail.value) })
   },
   save() {
     if (this.data.saving) return
@@ -38,7 +63,7 @@ Page({
     const requestId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
     const request = this.data.editingId
       ? s.updateTask(this.data.editingId, { title, detail })
-      : s.add({ title, detail, requestId })
+      : s.add({ title, detail, requestId, date: this.data.taskDate })
     request.then(x => {
       wx.showToast({ title: x && x.duplicate ? '任务已存在' : this.data.editingId ? '修改成功' : '已布置' })
       this.setData({ title: '', detail: '', editingId: '', saving: false })
@@ -58,6 +83,7 @@ Page({
     this.setData({ editingId: '', title: '', detail: '' })
   },
   goResources(e) {
+    getApp().globalData.scheduledTaskDate = this.data.taskDate
     getApp().globalData.resourceSubject = e.currentTarget.dataset.subject || 'chinese'
     wx.switchTab({ url: '/pages/resources/resources' })
   },

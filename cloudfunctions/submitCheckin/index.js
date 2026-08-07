@@ -4,6 +4,7 @@ cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const TYPES = ['image', 'audio', 'video']
 const EMPTY_GARDEN = { corn: 0, carrot: 0, tomato: 0, watermelon: 0, cabbage: 0, potato: 0 }
+const today = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
 
 exports.main = async ({ taskId, evidences = [] }) => {
   const { OPENID } = cloud.getWXContext()
@@ -21,6 +22,7 @@ exports.main = async ({ taskId, evidences = [] }) => {
     const family = (await tx.collection('families').doc(task.familyId).get()).data
     const member = family.members.find(item => item.openid === OPENID)
     if (!member || member.role !== 'child') throw new Error('只有孩子可打卡')
+    if (task.date > today()) throw new Error('未来任务请在任务日期当天再打卡')
     if (task.status === 'done') return { ok: true, duplicate: true, status: 'done', awarded: 0, pendingPlants: family.pendingPlants || 0 }
     if (!['todo', 'submitted'].includes(task.status)) throw new Error('任务状态已变化')
 

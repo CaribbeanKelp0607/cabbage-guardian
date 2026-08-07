@@ -45,15 +45,15 @@
   <view class="section-head">
     <view>
       <view class="section-title">{{periodWord}}打卡任务</view>
-      <view class="section-sub">{{selectedIsToday?'完成打卡即可选择种下 1 颗蔬菜':'历史任务与打卡结果'}}</view>
+      <view class="section-sub">{{selectedIsFuture?'计划任务将在当天开放打卡':selectedIsToday?'完成打卡即可选择种下 1 颗蔬菜':'历史任务与打卡结果'}}</view>
     </view>
     <view class="task-count">{{completedTasks}} / {{totalTasks}}</view>
   </view>
 
   <view wx:if="{{ready&&tasks.length===0}}" class="empty">
     <view class="empty-icon">{{historyUnavailable?'⚠️':'🌱'}}</view>
-    <view class="empty-title">{{historyUnavailable?'历史数据暂不可用':selectedIsToday?'今天还没有任务':'当天没有任务记录'}}</view>
-    <view class="muted">{{historyUnavailable?'请重新部署 getDashboard 云函数':selectedIsToday?'爸爸妈妈可以前往“任务”页添加':'可以选择其他日期继续查看'}}</view>
+    <view class="empty-title">{{historyUnavailable?'历史数据暂不可用':selectedIsFuture?'这一天还没有计划任务':selectedIsToday?'今天还没有任务':'当天没有任务记录'}}</view>
+    <view class="muted">{{historyUnavailable?'请重新部署 getDashboard 云函数':selectedIsFuture?'爸爸妈妈可以提前安排任务':selectedIsToday?'爸爸妈妈可以前往“任务”页添加':'可以选择其他日期继续查看'}}</view>
   </view>
 
   <view class="task-card" wx:for="{{tasks}}" wx:key="id">
@@ -64,9 +64,9 @@
         <view class="task-detail">{{item.detail}}</view>
         <view class="detail-entry">查看详情 ›</view>
       </view>
-      <view class="status {{item.status}}">{{item.status==='done'?'已完成 +1':'待打卡'}}</view>
+      <view class="status {{item.status}}">{{item.status==='done'?'已完成 +1':selectedIsFuture?'计划中':'待打卡'}}</view>
     </view>
-    <view wx:if="{{role==='child'&&item.status!=='done'}}" class="evidence-panel">
+    <view wx:if="{{role==='child'&&item.status!=='done'&&!selectedIsFuture}}" class="evidence-panel">
       <view class="evidence-hint">上传任一种打卡凭证后，将自动完成打卡</view>
       <view class="evidence-actions">
         <button class="evidence-button" data-id="{{item.id}}" bindtap="chooseImage" disabled="{{uploadingTaskId!==''||recordingTaskId!==''}}">图片</button>
@@ -83,6 +83,7 @@
   </view>
 
   <view wx:if="{{selectedIsToday}}" class="tip">🐻 23:00 若还有未完成任务，小熊会随机偷走一颗蔬菜。明天再一起赢回来！</view>
+  <view wx:elif="{{selectedIsFuture}}" class="history-tip">未来任务由爸爸妈妈管理，到任务日期当天即可打卡</view>
   <view wx:else class="history-tip">历史任务支持补打卡；待打卡任务可由爸爸妈妈修改</view>
 
   <view wx:if="{{editingHistoryId}}" class="edit-mask" bindtap="cancelHistoryEdit">
@@ -97,5 +98,5 @@
     </view>
   </view>
 
-  <task-detail visible="{{detailVisible}}" task="{{detailTask}}" role="{{role}}" uploading-task-id="{{uploadingTaskId}}" recording-task-id="{{recordingTaskId}}" bindclose="closeTaskDetail" bindchooseimage="chooseImage" bindchoosevideo="chooseVideo" bindstartrecording="startRecording" bindstoprecording="stopRecording"/>
+  <task-detail visible="{{detailVisible}}" task="{{detailTask}}" role="{{role}}" can-checkin="{{!selectedIsFuture}}" uploading-task-id="{{uploadingTaskId}}" recording-task-id="{{recordingTaskId}}" bindclose="closeTaskDetail" bindchooseimage="chooseImage" bindchoosevideo="chooseVideo" bindstartrecording="startRecording" bindstoprecording="stopRecording"/>
 </view>

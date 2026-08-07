@@ -12,6 +12,7 @@ Component({
     visible: { type: Boolean, value: false },
     task: { type: Object, value: {} },
     role: { type: String, value: '' },
+    canCheckin: { type: Boolean, value: true },
     uploadingTaskId: { type: String, value: '' },
     recordingTaskId: { type: String, value: '' }
   },

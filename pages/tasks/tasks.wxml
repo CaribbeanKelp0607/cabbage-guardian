@@ -7,11 +7,24 @@
       <view class="editor-title">{{editingId?'修改任务':'新增任务'}}</view>
       <view wx:if="{{!editingId}}" class="resource-buttons">
         <button class="resource-button" data-subject="chinese" bindtap="goResources">从语文资料库选择</button>
-        <button class="resource-button english-resource-button" data-subject="english" bindtap="goResources">从英语单词卡选择</button>
+        <button class="resource-button english-resource-button" data-subject="english" bindtap="goResources">从英语资料库选择</button>
+      </view>
+      <view wx:if="{{!editingId}}" class="date-picker-row" style="display:flex;align-items:center;justify-content:space-between;background:#edf7e9;border:2rpx solid #d7ead2;border-radius:24rpx;padding:18rpx 20rpx;margin:20rpx 0;">
+        <view style="display:flex;align-items:center;gap:16rpx;">
+          <view style="width:58rpx;height:58rpx;border-radius:18rpx;background:#59a15b;color:#fff;font-size:26rpx;font-weight:800;line-height:58rpx;text-align:center;">日</view>
+          <view>
+            <view style="font-size:28rpx;font-weight:800;color:#3b513b;">任务日期</view>
+          </view>
+        </view>
+        <picker mode="date" start="{{today}}" value="{{taskDate}}" bindchange="setTaskDate">
+          <view style="display:flex;align-items:center;gap:10rpx;background:#fff;border-radius:16rpx;padding:13rpx 14rpx 13rpx 18rpx;color:#3f8550;font-size:25rpx;font-weight:800;">
+            <text>{{taskDateLabel}}</text><text style="font-size:34rpx;line-height:28rpx;">›</text>
+          </view>
+        </picker>
       </view>
       <input placeholder="例如：阅读 20 分钟" value="{{title}}" data-k="title" bindinput="i"/>
       <textarea placeholder="学习要求（可选）" value="{{detail}}" data-k="detail" bindinput="i"/>
-      <view class="muted">同名任务当天不会重复创建；打卡后不可修改或删除。</view>
+      <view class="muted">可创建今天或未来日期的任务；同一天同名任务不会重复创建。</view>
       <view class="form-actions">
         <button wx:if="{{editingId}}" class="secondary-button" bindtap="cancelEdit" disabled="{{saving}}">取消</button>
         <button class="button save-button" bindtap="save" disabled="{{saving}}" loading="{{saving}}">{{saving?'保存中':editingId?'保存修改':'新增任务'}}</button>

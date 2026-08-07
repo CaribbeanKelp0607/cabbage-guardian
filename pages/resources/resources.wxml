@@ -58,6 +58,17 @@
       <view wx:elif="{{selectedResource.subject==='english'}}" class="resource-text word-list-text">{{selectedResource.content}}</view>
       <view wx:else class="resource-text {{selectedResource.category==='poem'?'poem-text':''}}">{{selectedResource.content}}</view>
       <view wx:if="{{role==='father'||role==='mother'}}" class="template-area">
+        <view class="resource-date-picker" style="display:flex;align-items:center;justify-content:space-between;background:#edf7e9;border:2rpx solid #d7ead2;border-radius:22rpx;padding:16rpx 18rpx;margin-bottom:22rpx;">
+          <view style="display:flex;align-items:center;gap:14rpx;">
+            <view style="width:50rpx;height:50rpx;border-radius:16rpx;background:#59a15b;color:#fff;font-size:23rpx;font-weight:800;line-height:50rpx;text-align:center;">日</view>
+            <view style="font-size:27rpx;font-weight:800;color:#3b513b;">任务日期</view>
+          </view>
+          <picker mode="date" start="{{today}}" value="{{resourceTaskDate}}" bindchange="setResourceTaskDate">
+            <view style="display:flex;align-items:center;gap:8rpx;background:#fff;border-radius:15rpx;padding:11rpx 12rpx 11rpx 16rpx;color:#3f8550;font-size:23rpx;font-weight:800;">
+              <text>{{resourceTaskDateLabel}}</text><text style="font-size:30rpx;line-height:26rpx;">›</text>
+            </view>
+          </picker>
+        </view>
         <view class="template-title">选择任务类型</view>
         <view class="template-buttons"><button wx:for="{{templates}}" wx:key="*this" class="template-button" data-type="{{item}}" bindtap="createTask" loading="{{creatingType===item}}" disabled="{{creatingType!==''}}">{{item}}</button></view>
       </view>
