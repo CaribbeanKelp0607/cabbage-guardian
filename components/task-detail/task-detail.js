@@ -19,10 +19,18 @@ Component({
   data: {
     dateText: '未记录',
     statusText: '待打卡',
-    statusHint: '孩子完成后可提交打卡'
+    statusHint: '孩子完成后可提交打卡',
+    playingFileId: '',
+    resolvingFileId: ''
+  },
+  lifetimes: {
+    detached() {
+      this.stopAudio()
+    }
   },
   observers: {
     task(task) {
+      this.stopAudio()
       const status = task && task.status
       const map = {
         todo: ['待打卡', '上传图片、录音或视频后可完成打卡'],
@@ -50,7 +58,54 @@ Component({
     stopRecording() {
       this.triggerEvent('stoprecording')
     },
+    destroyAudio() {
+      if (this._audio) {
+        const audio = this._audio
+        this._audio = null
+        audio.stop()
+        audio.destroy()
+      }
+    },
+    stopAudio() {
+      this._audioRequestId = (this._audioRequestId || 0) + 1
+      this.destroyAudio()
+      if (this.data.playingFileId || this.data.resolvingFileId) {
+        this.setData({ playingFileId: '', resolvingFileId: '' })
+      }
+    },
+    playAudio(e) {
+      const fileID = e.currentTarget.dataset.fileId
+      if (!fileID) return
+      if (this.data.playingFileId === fileID || this.data.resolvingFileId === fileID) {
+        this.stopAudio()
+        return
+      }
+
+      this.stopAudio()
+      const requestId = this._audioRequestId
+      this.setData({ resolvingFileId: fileID })
+      wx.cloud.getTempFileURL({ fileList: [fileID] }).then(result => {
+        if (this._audioRequestId !== requestId) return
+        const file = result.fileList && result.fileList[0]
+        if (!file || !file.tempFileURL) throw new Error('录音文件地址获取失败')
+        const audio = wx.createInnerAudioContext()
+        this._audio = audio
+        audio.src = file.tempFileURL
+        audio.onPlay(() => this.setData({ playingFileId: fileID, resolvingFileId: '' }))
+        audio.onEnded(() => this.stopAudio())
+        audio.onError(() => {
+          this.stopAudio()
+          wx.showToast({ title: '录音播放失败，请重试', icon: 'none' })
+        })
+        audio.play()
+      }).catch(error => {
+        if (this._audioRequestId !== requestId) return
+        this.setData({ playingFileId: '', resolvingFileId: '' })
+        wx.showToast({ title: error.message || '录音文件加载失败', icon: 'none' })
+      })
+    },
     close() {
+      this.stopAudio()
       this.triggerEvent('close')
     },
     stop() {}

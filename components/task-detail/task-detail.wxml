@@ -35,7 +35,7 @@
       <view wx:for="{{task.evidences}}" wx:key="fileID" class="evidence-item">
         <view class="evidence-type">{{item.type==='image'?'图片':item.type==='audio'?'录音':'视频'}}</view>
         <image wx:if="{{item.type==='image'}}" class="evidence-image" src="{{item.fileID}}" mode="widthFix"/>
-        <audio wx:elif="{{item.type==='audio'}}" class="evidence-audio" src="{{item.fileID}}" controls/>
+        <button wx:elif="{{item.type==='audio'}}" class="evidence-audio" data-file-id="{{item.fileID}}" bindtap="playAudio" loading="{{resolvingFileId===item.fileID}}" style="margin:0;width:100%;background:#e3f0de;color:#4d8d43;border-radius:16rpx;font-size:27rpx;">{{playingFileId===item.fileID?'停止播放':'▶ 播放录音'}}</button>
         <video wx:else class="evidence-video" src="{{item.fileID}}" controls object-fit="contain"/>
       </view>
     </view>
