@@ -7,6 +7,8 @@
   <view class="title">{{library.title}}</view>
   <view class="intro">{{library.intro}}</view>
 
+  <view wx:if="{{!ready}}" class="resource-loading" style="margin:28rpx 0;padding:26rpx;border-radius:22rpx;background:#fff;text-align:center;color:#7d877a;font-size:26rpx;">正在加载资料库…</view>
+
   <view wx:if="{{role==='father'||role==='mother'}}" class="resource-tools">
     <button class="refresh-button" bindtap="initResources" loading="{{initializing}}" disabled="{{initializing}}">{{initializing?'更新中':'更新资源库'}}</button>
     <view class="resource-count">共 {{resources.length}} 项</view>

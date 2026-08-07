@@ -3,16 +3,22 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
 const _ = db.command
+const today = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
 
 exports.main = async ({ subject = 'chinese', grade = 3, volume = 'first', category = '' } = {}) => {
   const { OPENID } = cloud.getWXContext()
-  const familyResult = await db.collection('families').where({ members: _.elemMatch({ openid: OPENID }) }).get()
-  if (!familyResult.data.length) throw new Error('未加入家庭')
   const english = subject === 'english'
   const query = english ? { subject: 'english', enabled: true } : { grade: Number(grade), volume, enabled: true }
   if (category) query.category = category
-  const result = await db.collection('learningResources').where(query).get()
+  const [familyResult, result] = await Promise.all([
+    db.collection('families').where({ members: _.elemMatch({ openid: OPENID }) }).get(),
+    db.collection('learningResources').where(query).get()
+  ])
+  if (!familyResult.data.length) throw new Error('未加入家庭')
+  const member = familyResult.data[0].members.find(item => item.openid === OPENID)
   return {
+    role: member && member.role,
+    today: today(),
     resources: result.data.sort((a, b) => a.unit - b.unit || a.title.localeCompare(b.title, 'zh-CN')),
     templates: english ? ['朗读', '拼读', '拼写'] : ['朗读', '背诵', '默写'],
     library: english

@@ -2,6 +2,7 @@ App({
   globalData: {
     env: 'cloud1-d9gmpplqy199da016',
     scheduledTaskDate: '',
+    resourceCache: {},
     family: {
       role: 'child',
       cabbages: 6,

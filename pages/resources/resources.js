@@ -1,7 +1,9 @@
-const s = require('../../utils/store')
+const store = require('../../utils/store')
 
-const message = e => (e && e.message) || (e && e.errMsg) || '操作失败'
+const CACHE_TTL = 5 * 60 * 1000
+const message = error => (error && error.message) || (error && error.errMsg) || '操作失败'
 const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+const localToday = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
 const dateLabel = value => {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return '请选择日期'
   const [year, month, day] = value.split('-').map(Number)
@@ -29,116 +31,130 @@ Page({
     resourceTaskDateLabel: '请选择日期',
     templates: ['朗读', '背诵', '默写']
   },
+
   onShow() {
     const app = getApp()
     const subject = app.globalData.resourceSubject || this.data.subject
     app.globalData.resourceSubject = ''
     this.load(subject)
   },
+
   categoryLabel(id, categories) {
     const category = (categories || []).find(item => item.id === id)
     return category ? category.label : '学习资源'
   },
+
   filterResources() {
     const { resources, activeCategory } = this.data
     this.setData({ filteredResources: activeCategory === 'all' ? resources : resources.filter(item => item.category === activeCategory) })
   },
-  load(subject = this.data.subject) {
-    const activeCategory = subject === 'english' && this.data.subject !== 'english'
-      ? 'joinin'
-      : this.data.activeCategory
-    s.get().then(dashboard => {
-      const app = getApp()
-      const scheduledDate = app.globalData.scheduledTaskDate
-      const resourceTaskDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) && scheduledDate >= dashboard.date
-        ? scheduledDate
-        : dashboard.date
-      app.globalData.scheduledTaskDate = resourceTaskDate
-      this.setData({
-        role: dashboard.role,
-        today: dashboard.date,
-        resourceTaskDate,
-        resourceTaskDateLabel: dateLabel(resourceTaskDate),
-        ready: false,
-        resourceError: false
-      })
-      return s.getResources(subject)
-    }).then(result => {
-      const categories = [{ id: 'all', label: '全部' }].concat(result.categories || [])
-      this.setData({
-        subject,
-        library: result.library || this.data.library,
-        resources: (result.resources || []).map(resource => ({
-          ...resource,
-          categoryLabel: this.categoryLabel(resource.category, result.categories),
-          icon: ({ poem: '诗', text: '文', classical: '古', language: '积', block: 'A', joinin: '英' })[resource.category] || '学',
-          preview: resource.content.replace(/\n/g, ' / ')
-        })),
-        categories,
-        activeCategory,
-        templates: result.templates || ['朗读', '背诵', '默写'],
-        ready: true,
-        initializing: false,
-        resourceError: false
-      })
-      this.filterResources()
-    }).catch(e => {
-      this.setData({ ready: true, initializing: false })
-      if (this.data.role) {
-        this.setData({ resources: [], filteredResources: [], resourceError: true })
-        wx.showToast({ title: '资源查询服务未部署', icon: 'none' })
-      } else wx.showToast({ title: message(e), icon: 'none' })
+
+  applyResources(result, subject, activeCategory) {
+    const app = getApp()
+    const today = result.today || localToday()
+    const scheduledDate = app.globalData.scheduledTaskDate
+    const resourceTaskDate = /^\d{4}-\d{2}-\d{2}$/.test(scheduledDate) && scheduledDate >= today
+      ? scheduledDate
+      : today
+    const categories = [{ id: 'all', label: '全部' }].concat(result.categories || [])
+    app.globalData.scheduledTaskDate = resourceTaskDate
+    this.setData({
+      role: result.role || this.data.role,
+      subject,
+      library: result.library || this.data.library,
+      resources: (result.resources || []).map(resource => ({
+        ...resource,
+        categoryLabel: this.categoryLabel(resource.category, result.categories),
+        icon: ({ poem: '诗', text: '文', classical: '古', language: '积', block: 'A', joinin: '英' })[resource.category] || '学',
+        preview: String(resource.content || '').replace(/\n/g, ' / ')
+      })),
+      categories,
+      activeCategory,
+      today,
+      resourceTaskDate,
+      resourceTaskDateLabel: dateLabel(resourceTaskDate),
+      templates: result.templates || ['朗读', '背诵', '默写'],
+      ready: true,
+      initializing: false,
+      resourceError: false
+    })
+    this.filterResources()
+  },
+
+  load(subject = this.data.subject, preferredCategory = '') {
+    const activeCategory = preferredCategory || (subject === 'english' && this.data.subject !== 'english' ? 'joinin' : this.data.activeCategory)
+    const app = getApp()
+    const cached = app.globalData.resourceCache && app.globalData.resourceCache[subject]
+    if (cached && cached.expiresAt > Date.now()) {
+      this.applyResources(cached.result, subject, activeCategory)
+      return
+    }
+
+    this.setData({ ready: false, resourceError: false })
+    store.getResources(subject).then(result => {
+      app.globalData.resourceCache = app.globalData.resourceCache || {}
+      app.globalData.resourceCache[subject] = { result, expiresAt: Date.now() + CACHE_TTL }
+      this.applyResources(result, subject, activeCategory)
+    }).catch(error => {
+      this.setData({ ready: true, initializing: false, resources: [], filteredResources: [], resourceError: true })
+      wx.showToast({ title: this.data.role ? '资源查询服务未部署' : message(error), icon: 'none' })
     })
   },
+
   setLibrary(e) {
     const subject = e.currentTarget.dataset.subject
     if (!subject || subject === this.data.subject) return
     this.setData({ subject, activeCategory: 'all', resources: [], filteredResources: [] })
-    this.load(subject)
+    this.load(subject, subject === 'english' ? 'joinin' : 'all')
   },
+
   setCategory(e) {
     this.setData({ activeCategory: e.currentTarget.dataset.id })
     this.filterResources()
   },
+
   initResources() {
     if (this.data.initializing) return
     this.setData({ initializing: true })
-    s.seedResources().then(result => {
+    store.seedResources().then(result => {
+      getApp().globalData.resourceCache = {}
       wx.showToast({ title: `已载入 ${result.count} 项资源` })
       this.load()
-    }).catch(e => {
+    }).catch(error => {
       this.setData({ initializing: false })
-      wx.showToast({ title: message(e), icon: 'none' })
+      wx.showToast({ title: message(error), icon: 'none' })
     })
   },
+
   openResource(e) {
     const id = e.currentTarget.dataset.id
     const resource = this.data.resources.find(item => item._id === id || item.id === id)
     if (resource) this.setData({ selectedResource: resource, resourceVisible: true })
   },
+
   closeResource() {
     if (!this.data.creatingType) this.setData({ resourceVisible: false, selectedResource: {} })
   },
+
   stop() {},
+
   setResourceTaskDate(e) {
     getApp().globalData.scheduledTaskDate = e.detail.value
-    this.setData({
-      resourceTaskDate: e.detail.value,
-      resourceTaskDateLabel: dateLabel(e.detail.value)
-    })
+    this.setData({ resourceTaskDate: e.detail.value, resourceTaskDateLabel: dateLabel(e.detail.value) })
   },
+
   createTask(e) {
     const taskType = e.currentTarget.dataset.type
     const resource = this.data.selectedResource
     if (!resource || !taskType || this.data.creatingType) return
     this.setData({ creatingType: taskType })
     const requestId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
-    s.add({ resourceId: resource._id || resource.id, taskType, requestId, date: this.data.resourceTaskDate }).then(result => {
+    store.add({ resourceId: resource._id || resource.id, taskType, requestId, date: this.data.resourceTaskDate }).then(result => {
       wx.showToast({ title: result.duplicate ? '该日期已创建该任务' : '已创建任务', icon: 'none' })
       this.setData({ creatingType: '', resourceVisible: false, selectedResource: {} })
-    }).catch(e => {
+    }).catch(error => {
       this.setData({ creatingType: '' })
-      wx.showToast({ title: message(e), icon: 'none' })
+      wx.showToast({ title: message(error), icon: 'none' })
     })
   }
 })
