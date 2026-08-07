@@ -7,6 +7,11 @@
 
   <view class="garden-scene">
     <image class="garden-background" src="/assets/garden/garden-background.jpg" mode="widthFix" />
+    <view style="{{bearPositionStyle}}">
+      <image src="/assets/garden/bear-patrol.png" mode="aspectFit" style="{{bearBodyStyle}};display:block;width:177rpx;height:177rpx;filter:drop-shadow(0 9rpx 7rpx rgba(65,53,30,.2));" />
+      <view style="position:absolute;left:50%;top:-34rpx;transform:translateX(-50%);white-space:nowrap;background:rgba(255,248,224,.96);border-radius:999rpx;padding:6rpx 13rpx;color:#7c6034;font-size:19rpx;font-weight:800;">{{bearMessage}}</view>
+      <view style="position:absolute;left:22rpx;top:160rpx;color:#8b7650;font-size:17rpx;letter-spacing:8rpx;white-space:nowrap;">· · ·</view>
+    </view>
     <view class="plot-grid">
       <view class="vegetable-plot" wx:for="{{plots}}" wx:key="type">
         <view class="vegetable-items">
@@ -39,10 +44,10 @@
   <view wx:else class="empty-reward">孩子完成任务后，可以在这里选择并种下蔬菜。</view>
 
   <view class="bear-card">
-    <view class="bear-icon">🐻</view>
+    <image src="/assets/garden/bear-patrol.png" mode="aspectFit" style="width:76rpx;height:76rpx;flex-shrink:0;" />
     <view>
-      <view class="bear-title">小熊正在虎视眈眈</view>
-      <view class="bear-text">如果今天还有任务没有完成，晚上 23:00 它会随机偷走一颗已经种下的菜。</view>
+      <view class="bear-title">小熊正在菜地里巡逻</view>
+      <view class="bear-text">它会伸着大爪子找菜；如果今天还有任务没有完成，晚上 23:00 它会随机偷走一颗已经种下的菜。</view>
     </view>
   </view>
 </view>

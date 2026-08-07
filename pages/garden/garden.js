@@ -8,6 +8,7 @@ const vegetableDefinitions = [
   { type: 'cabbage', name: '白菜', emoji: '🥬' },
   { type: 'potato', name: '土豆', emoji: '🥔' }
 ]
+const bearMessages = ['盯上菜啦', '闻到香菜啦', '伸爪准备偷', '找找哪颗菜']
 
 const getErrorMessage = error =>
   (error && error.message) || (error && error.errMsg) || '操作失败'
@@ -19,11 +20,51 @@ Page({
     role: '',
     total: 0,
     pendingPlants: 0,
+    bearPositionStyle: '',
+    bearBodyStyle: '',
+    bearMessage: '巡逻找菜中',
     plots: vegetableDefinitions.map(item => ({ ...item, count: 0, items: [] }))
   },
 
   onShow() {
     this.loadGarden()
+    this.startBearPatrol()
+  },
+
+  onHide() {
+    this.stopBearPatrol()
+  },
+
+  onUnload() {
+    this.stopBearPatrol()
+  },
+
+  startBearPatrol() {
+    this.moveBear()
+    this.stopBearPatrol()
+    this._bearTimer = setInterval(() => this.moveBear(), 3600)
+  },
+
+  stopBearPatrol() {
+    if (this._bearTimer) {
+      clearInterval(this._bearTimer)
+      this._bearTimer = null
+    }
+  },
+
+  moveBear() {
+    const left = 9 + Math.floor(Math.random() * 72)
+    const bottom = 26 + Math.floor(Math.random() * 10)
+    const facing = Math.random() > 0.5 ? 1 : -1
+    const duration = 2.4 + Math.random() * 1.2
+    const bearMessage = this.data.total > 0
+      ? bearMessages[Math.floor(Math.random() * bearMessages.length)]
+      : '等着长菜呢'
+    this.setData({
+      bearMessage,
+      bearPositionStyle: `position:absolute;z-index:6;left:${left}%;bottom:${bottom}%;transition:left ${duration}s ease-in-out,bottom ${duration}s ease-in-out;pointer-events:none;`,
+      bearBodyStyle: `transform:scaleX(${facing});transition:transform .45s ease;`
+    })
   },
 
   loadGarden() {
@@ -43,6 +84,7 @@ Page({
           }
         })
       })
+      this.moveBear()
     }).catch(error => {
       wx.showToast({ title: getErrorMessage(error), icon: 'none' })
     })
