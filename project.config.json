@@ -29,7 +29,13 @@
   },
   "simulatorPluginLibVersion": {},
   "packOptions": {
-    "ignore": [],
+    "ignore": [
+      { "type": "folder", "value": "tmp" },
+      { "type": "folder", "value": "scripts" },
+      { "type": "folder", "value": "node_modules" },
+      { "type": "file", "value": ".env.resource-import.local" },
+      { "type": "file", "value": "app.js.encoding-backup" }
+    ],
     "include": []
   },
   "editorSetting": {},
