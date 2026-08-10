@@ -51,7 +51,7 @@ function readManifest(file) {
   if (!file) throw new Error('缺少 --manifest 参数')
   const manifest = JSON.parse(fs.readFileSync(path.resolve(file), 'utf8'))
   if (!Array.isArray(manifest.resources) || !manifest.resources.length) throw new Error('清单中至少需要一项 resources')
-  if (manifest.resources.length > 50) throw new Error('单次最多导入 50 张图片')
+  if (manifest.resources.length > 120) throw new Error('单次最多导入 120 张图片')
   return manifest
 }
 
@@ -69,6 +69,7 @@ function prepare(manifest, familyId) {
     const title = clean(raw.title, 160) || `未命名资源 ${String(index + 1).padStart(2, '0')}`
     return {
       file, sourceHash, title, content: clean(raw.content), libraryId, libraryLabel, categoryId, categoryLabel,
+      unit: Number(raw.unit) || 0,
       // 同一张来源图片可以拆成多项学习任务；资源 ID 还需包含标题，避免相互覆盖。
       id: `resource-import-${sha(`${sourceHash}:${titleKey(title)}`).slice(0, 24)}`,
       cloudPath: `resource-images/import/${sourceHash}${ext}`
@@ -89,14 +90,12 @@ async function main() {
   const preparedEntries = prepare(manifest, family._id)
   const existingResult = await db.collection('learningResources').where({ subject: preparedEntries[0].libraryId, category: preparedEntries[0].categoryId, enabled: true }).get()
   const existingByTitle = new Map((existingResult.data || []).map(item => [titleKey(item.title), item]))
-  const skipped = preparedEntries.filter(item => {
+  // 标题相同代表同一份导入资源：沿用既有 ID 覆盖更新，避免资料卡重复。
+  const entries = preparedEntries.map(item => {
     const existing = existingByTitle.get(titleKey(item.title))
-    return existing && existing._id !== item.id
+    return existing ? { ...item, id: existing._id } : item
   })
-  const entries = preparedEntries.filter(item => !skipped.includes(item))
   console.log(`目标家庭：${family._id}；待导入 ${entries.length} 项；分类：${preparedEntries[0].libraryLabel} / ${preparedEntries[0].categoryLabel}`)
-  skipped.forEach(item => console.log(`- 跳过同名资源：${item.title}`))
-  if (!entries.length) return console.log('没有需要导入的新资源。')
   entries.forEach((item, index) => console.log(`${index + 1}. ${item.title} <- ${item.file}`))
   if (!apply) return console.log('预览完成。确认无误后追加 --apply 执行上传和入库。')
 
@@ -114,6 +113,7 @@ async function main() {
         category: item.categoryId,
         categoryLabel: item.categoryLabel,
         subject: item.libraryId,
+        unit: item.unit,
         title: item.title,
         content: item.content,
         image: upload.fileID,

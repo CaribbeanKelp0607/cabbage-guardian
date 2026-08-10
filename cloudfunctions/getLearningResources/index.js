@@ -39,8 +39,8 @@ exports.main = async ({ subject = '', libraryId = '', grade = 3, volume = 'first
       ? { grade: Number(grade), volume, enabled: true }
       : null
   const [familyResourcesResult, seededResult] = await Promise.all([
-    db.collection('learningResources').where({ familyId: family._id, enabled: true }).get(),
-    seededQuery ? db.collection('learningResources').where(seededQuery).get() : Promise.resolve({ data: [] })
+    db.collection('learningResources').where({ familyId: family._id, enabled: true }).limit(100).get(),
+    seededQuery ? db.collection('learningResources').where(seededQuery).limit(100).get() : Promise.resolve({ data: [] })
   ])
   const familyResources = familyResourcesResult.data
   // 英语公共资源查询会同时命中家庭导入资源；家庭资源仅在后半段合并一次。
