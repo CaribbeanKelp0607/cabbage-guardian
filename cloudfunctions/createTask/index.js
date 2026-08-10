@@ -32,11 +32,15 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType, date } =
     if (!templates[taskType]) throw new Error('请选择可用的任务类型')
     const resource = (await db.collection('learningResources').doc(resourceId).get()).data
     if (!resource || !resource.enabled) throw new Error('学习资源不可用')
+    if (resource.familyId && resource.familyId !== family._id) throw new Error('无权使用其他家庭的资源')
     title = `${taskType}《${resource.title}》`
     detail = templates[taskType](resource.title)
     resourceSnapshot = {
       id: resourceId,
       category: resource.category,
+      categoryLabel: resource.categoryLabel,
+      libraryId: resource.libraryId || resource.subject,
+      libraryLabel: resource.libraryLabel,
       grade: resource.grade,
       volume: resource.volume,
       unit: resource.unit,
@@ -44,6 +48,7 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType, date } =
       author: resource.author,
       dynasty: resource.dynasty,
       content: resource.content,
+      image: resource.image,
       taskType
     }
   } else {

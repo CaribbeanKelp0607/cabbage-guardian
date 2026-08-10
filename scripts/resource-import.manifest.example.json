@@ -1,0 +1,11 @@
+{
+  "library": { "id": "english", "label": "英语资料库" },
+  "category": { "id": "joinin", "label": "三上单词表" },
+  "resources": [
+    {
+      "file": "C:\\Users\\LvYuan\\Downloads\\example.jpg",
+      "title": "Welcome unit 单词表",
+      "content": "由 Codex 根据图片整理的文字内容。"
+    }
+  ]
+}

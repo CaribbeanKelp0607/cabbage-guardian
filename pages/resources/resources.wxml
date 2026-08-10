@@ -1,8 +1,7 @@
 <view class="page resource-page">
-  <view class="library-tabs">
-    <view class="library-tab {{subject==='chinese'?'active':''}}" data-subject="chinese" bindtap="setLibrary">语文资料库</view>
-    <view class="library-tab {{subject==='english'?'active':''}}" data-subject="english" bindtap="setLibrary">英语资料库</view>
-  </view>
+  <scroll-view class="library-tabs" scroll-x="true" show-scrollbar="false"><view style="display:flex;gap:14rpx;">
+    <view wx:for="{{libraries}}" wx:key="id" class="library-tab {{libraryId===item.id?'active':''}}" data-id="{{item.id}}" bindtap="setLibrary">{{item.label}}</view>
+  </view></scroll-view>
   <view class="eyebrow">{{library.eyebrow}}</view>
   <view class="title">{{library.title}}</view>
   <view class="intro">{{library.intro}}</view>
@@ -10,7 +9,10 @@
   <view wx:if="{{!ready}}" class="resource-loading" style="margin:28rpx 0;padding:26rpx;border-radius:22rpx;background:#fff;text-align:center;color:#7d877a;font-size:26rpx;">正在加载资料库…</view>
 
   <view wx:if="{{role==='father'||role==='mother'}}" class="resource-tools">
-    <button class="refresh-button" bindtap="initResources" loading="{{initializing}}" disabled="{{initializing}}">{{initializing?'更新中':'更新资源库'}}</button>
+    <view class="resource-tool-buttons">
+      <button class="refresh-button" bindtap="openUpload">上传资源</button>
+      <button class="refresh-button" bindtap="initResources" loading="{{initializing}}" disabled="{{initializing}}">{{initializing?'更新中':'更新资源库'}}</button>
+    </view>
     <view class="resource-count">共 {{resources.length}} 项</view>
   </view>
 
@@ -33,7 +35,7 @@
     <view wx:else class="resource-icon">{{item.icon}}</view>
     <view class="resource-copy">
       <view class="resource-title">{{item.title}}</view>
-      <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.series}}"> · {{item.unitLabel}}</text><text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'}}"> · 第 {{item.unit}} 单元</text></view>
+      <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.series}}"> · {{item.unitLabel}}</text><text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'&&item.unit}}"> · 第 {{item.unit}} 单元</text></view>
       <view class="resource-preview">{{item.preview||item.content}}</view>
     </view>
     <view class="resource-arrow">›</view>
@@ -47,18 +49,19 @@
   <view wx:if="{{resourceVisible}}" class="resource-mask" bindtap="closeResource">
     <view class="resource-dialog" catchtap="stop">
       <view class="dialog-top">
-        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.series}}"> · {{selectedResource.unitLabel}}</text><text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
+        <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.series}}"> · {{selectedResource.unitLabel}}</text><text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'&&selectedResource.unit}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
         <view class="dialog-close" bindtap="closeResource">×</view>
       </view>
-      <view wx:if="{{selectedResource.subject==='english'&&selectedResource.image}}" class="word-card">
+      <view wx:if="{{selectedResource.subject==='english'&&selectedResource.image&&selectedResource.source!=='family'}}" class="word-card">
         <image class="word-illustration" src="{{selectedResource.image}}" mode="widthFix" />
         <view class="word-translation">{{selectedResource.translation}}</view>
         <view class="word-phonetic">{{selectedResource.phonetic}}</view>
         <view class="word-example">{{selectedResource.example}}</view>
         <view class="word-example-translation">{{selectedResource.exampleTranslation}}</view>
       </view>
-      <view wx:elif="{{selectedResource.subject==='english'}}" class="resource-text word-list-text">{{selectedResource.content}}</view>
-      <view wx:else class="resource-text {{selectedResource.category==='poem'?'poem-text':''}}">{{selectedResource.content}}</view>
+      <image wx:elif="{{selectedResource.image}}" class="uploaded-resource-image" src="{{selectedResource.image}}" mode="widthFix" />
+      <view wx:if="{{selectedResource.subject==='english'&&(!selectedResource.image||selectedResource.source==='family')&&selectedResource.content}}" class="resource-text word-list-text">{{selectedResource.content}}</view>
+      <view wx:if="{{selectedResource.subject!=='english'&&selectedResource.content}}" class="resource-text {{selectedResource.category==='poem'?'poem-text':''}}">{{selectedResource.content}}</view>
       <view wx:if="{{role==='father'||role==='mother'}}" class="template-area">
         <view class="resource-date-picker" style="display:flex;align-items:center;justify-content:space-between;background:#edf7e9;border:2rpx solid #d7ead2;border-radius:22rpx;padding:16rpx 18rpx;margin-bottom:22rpx;">
           <view style="display:flex;align-items:center;gap:14rpx;">
@@ -75,6 +78,42 @@
         <view class="template-buttons"><button wx:for="{{templates}}" wx:key="*this" class="template-button" data-type="{{item}}" bindtap="createTask" loading="{{creatingType===item}}" disabled="{{creatingType!==''}}">{{item}}</button></view>
       </view>
       <view wx:else class="child-read">学习完成后，请到“今天”页提交打卡。</view>
+    </view>
+  </view>
+
+  <view wx:if="{{uploadVisible}}" class="resource-mask" bindtap="closeUpload">
+    <view class="resource-dialog upload-dialog" catchtap="stop">
+      <view class="dialog-top">
+        <view><view class="dialog-title">上传学习资源</view><view class="dialog-meta">可选择已有分类，也可填写新的一级、二级分类。</view></view>
+        <view class="dialog-close" bindtap="closeUpload">×</view>
+      </view>
+      <view class="upload-form">
+        <view class="form-label">一级分类</view>
+        <picker range="{{libraries}}" range-key="label" value="{{uploadLibraryIndex}}" bindchange="changeUploadLibrary">
+          <view class="picker-value">{{uploadLibraryLabel||'请选择一级分类'}} ›</view>
+        </picker>
+        <input class="form-input" value="{{newLibraryLabel}}" data-key="newLibraryLabel" bindinput="uploadInput" placeholder="或新建一级分类，例如：数学资料库" maxlength="30" />
+        <view class="form-label">二级分类</view>
+        <picker wx:if="{{uploadCategories.length}}" range="{{uploadCategories}}" range-key="label" value="{{uploadCategoryIndex}}" bindchange="changeUploadCategory">
+          <view class="picker-value">{{uploadCategoryLabel||'请选择二级分类'}} ›</view>
+        </picker>
+        <view wx:else class="picker-value muted-picker">当前一级分类暂无二级分类，请在下方新建</view>
+        <input class="form-input" value="{{newCategoryLabel}}" data-key="newCategoryLabel" bindinput="uploadInput" placeholder="或新建二级分类，例如：我的世界单词卡" maxlength="30" />
+        <view class="form-label">资源图片（每张图片生成一项资源）</view>
+        <button class="image-upload-button" bindtap="chooseUploadImages" loading="{{uploadingImage}}" disabled="{{uploadingImage}}">选择图片（最多 9 张）</button>
+        <view wx:if="{{uploadProgressText}}" class="batch-progress">{{uploadProgressText}}</view>
+        <view wx:for="{{batchItems}}" wx:key="key" class="batch-item">
+          <image class="batch-preview" src="{{item.fileID||item.localPath}}" mode="aspectFill" />
+          <view class="batch-copy">
+            <input class="batch-title-input" value="{{item.title}}" data-index="{{index}}" bindinput="editBatchTitle" maxlength="80" />
+            <view wx:if="{{item.state==='uploading'}}" class="batch-hint">正在上传图片…</view>
+            <view wx:elif="{{item.error}}" class="batch-error">{{item.error}}</view>
+            <view wx:else class="batch-hint">请填写资源名称后保存</view>
+          </view>
+          <view class="batch-remove" data-index="{{index}}" bindtap="removeBatchItem">×</view>
+        </view>
+      </view>
+      <button class="button upload-submit" bindtap="saveBatchResources" loading="{{savingResource}}" disabled="{{savingResource||uploadingImage}}">确认并保存到资源库</button>
     </view>
   </view>
 </view>

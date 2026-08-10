@@ -11,8 +11,10 @@ exports.main = async () => {
   const member = familyResult.data[0].members.find(item => item.openid === OPENID)
   if (!member || !['father', 'mother'].includes(member.role)) throw new Error('只有爸爸妈妈可以初始化资源库')
   for (const resource of resources) {
+    let existing = null
+    try { existing = (await db.collection('learningResources').doc(resource.id).get()).data } catch (error) {}
     await db.collection('learningResources').doc(resource.id).set({
-      data: { ...resource, enabled: true, updatedAt: db.serverDate() }
+      data: { ...(existing || {}), ...resource, image: resource.image || (existing && existing.image) || '', enabled: true, updatedAt: db.serverDate() }
     })
   }
   return { ok: true, count: resources.length }
