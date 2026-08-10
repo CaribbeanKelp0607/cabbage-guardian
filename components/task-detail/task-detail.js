@@ -7,6 +7,14 @@ const formatDate = value => {
   return `${year}年${month}月${day}日 ${dayNames[date.getUTCDay()]}`
 }
 
+const evidenceErrorMessage = error => {
+  const detail = String((error && (error.errMsg || error.message)) || '').toLowerCase()
+  if (/not.?found|not.?exist|fileid|file.?not.?exist|文件不存在/.test(detail)) return '文件不存在，可能已被清理'
+  if (/permission|denied|unauthorized|auth|权限/.test(detail)) return '当前账号没有读取该凭证的权限'
+  if (/network|timeout|网络|超时/.test(detail)) return '网络连接超时，请稍后重试'
+  return '云端文件暂时无法读取，请稍后重试'
+}
+
 Component({
   properties: {
     visible: { type: Boolean, value: false },
@@ -71,10 +79,16 @@ Component({
           return { ...item, fileURL: result.tempFilePath }
         })
       }
-      Promise.all(evidences.map(item => resolveEvidence(item).catch(() => ({ ...item, fileURL: '', loadError: true })))).then(items => {
+      Promise.all(evidences.map(item => resolveEvidence(item).catch(error => {
+        console.error('打卡凭证加载失败', { fileID: item.fileID, type: item.type, error })
+        return { ...item, fileURL: '', loadError: true, loadErrorMessage: evidenceErrorMessage(error) }
+      }))).then(items => {
         if (this._evidenceRequestId !== requestId) return
         this.setData({ evidenceItems: items })
       })
+    },
+    retryEvidence() {
+      this.loadEvidenceItems(this.properties.task)
     },
     chooseImage() {
       this.triggerEvent('chooseimage', { id: this.properties.task.id })

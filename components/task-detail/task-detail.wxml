@@ -39,7 +39,10 @@
         <view wx:if="{{item.type==='image'&&item.fileURL}}" class="evidence-image-hint">点击图片可放大查看</view>
         <button wx:if="{{item.type==='audio'&&!item.loadError}}" class="evidence-audio" data-file-id="{{item.fileID}}" bindtap="playAudio" loading="{{resolvingFileId===item.fileID}}" style="margin:0;width:100%;background:#e3f0de;color:#4d8d43;border-radius:16rpx;font-size:27rpx;">{{playingFileId===item.fileID?'停止播放':'▶ 播放录音'}}</button>
         <video wx:if="{{item.type==='video'&&item.fileURL}}" class="evidence-video" src="{{item.fileURL}}" controls object-fit="contain"/>
-        <view wx:if="{{item.loadError}}" class="evidence-load-error">该凭证加载失败，请关闭详情后重试。</view>
+        <view wx:if="{{item.loadError}}" class="evidence-load-error">
+          <view>{{item.loadErrorMessage||'该凭证暂时无法加载'}}</view>
+          <button class="evidence-retry" data-file-id="{{item.fileID}}" bindtap="retryEvidence">重新加载</button>
+        </view>
       </view>
     </view>
     <view wx:if="{{role==='child'&&task.status!=='done'&&canCheckin}}" class="upload-section">
