@@ -8,6 +8,7 @@
       <view wx:if="{{!editingId}}" class="resource-buttons">
         <button class="resource-button" data-subject="chinese" bindtap="goResources">从语文资料库选择</button>
         <button class="resource-button english-resource-button" data-subject="english" bindtap="goResources">从英语资料库选择</button>
+        <button class="resource-button math-resource-button" data-subject="math" bindtap="goResources">从数学资料库选择</button>
       </view>
       <view wx:if="{{!editingId}}" class="date-picker-row" style="display:flex;align-items:center;justify-content:space-between;background:#edf7e9;border:2rpx solid #d7ead2;border-radius:24rpx;padding:18rpx 20rpx;margin:20rpx 0;">
         <view style="display:flex;align-items:center;gap:16rpx;">
