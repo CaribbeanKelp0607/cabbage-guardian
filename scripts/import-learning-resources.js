@@ -69,7 +69,8 @@ function prepare(manifest, familyId) {
     const title = clean(raw.title, 160) || `未命名资源 ${String(index + 1).padStart(2, '0')}`
     return {
       file, sourceHash, title, content: clean(raw.content), libraryId, libraryLabel, categoryId, categoryLabel,
-      id: `resource-import-${sourceHash.slice(0, 24)}`,
+      // 同一张来源图片可以拆成多项学习任务；资源 ID 还需包含标题，避免相互覆盖。
+      id: `resource-import-${sha(`${sourceHash}:${titleKey(title)}`).slice(0, 24)}`,
       cloudPath: `resource-images/import/${sourceHash}${ext}`
     }
   })
