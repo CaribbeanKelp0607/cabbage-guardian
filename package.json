@@ -2,7 +2,8 @@
   "private": true,
   "scripts": {
     "import:resources": "node scripts/import-learning-resources.js",
-    "migrate:public-images": "node scripts/migrate-public-resource-images.js"
+    "migrate:public-images": "node scripts/migrate-public-resource-images.js",
+    "remove:english-joinin": "node scripts/remove-english-joinin-resources.js"
   },
   "dependencies": {
     "@cloudbase/node-sdk": "^3.18.3"

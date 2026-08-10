@@ -17,7 +17,6 @@ const defaultCategories = {
     { id: 'language', label: '积累' }
   ],
   english: [
-    { id: 'joinin', label: '三上单词表' },
     { id: 'block', label: '我的世界单词卡' }
   ],
   math: []

@@ -26,5 +26,4 @@ module.exports = [
   { id: 'minecraft-english-block-006', subject: 'english', volume: 'minecraft', category: 'block', unit: 6, title: 'Sand', translation: '沙子', phonetic: '/sænd/', example: 'Sand is yellow.', exampleTranslation: '沙子是黄色的。', content: 'Sand\n沙子\n/sænd/\n\nSand is yellow.\n沙子是黄色的。' },
   { id: 'minecraft-english-block-007', subject: 'english', volume: 'minecraft', category: 'block', unit: 7, title: 'Gravel', translation: '沙砾', phonetic: '/ˈɡrævəl/', example: 'Gravel can fall.', exampleTranslation: '沙砾会掉落。', content: 'Gravel\n沙砾\n/ˈɡrævəl/\n\nGravel can fall.\n沙砾会掉落。' },
   { id: 'minecraft-english-block-008', subject: 'english', volume: 'minecraft', category: 'block', unit: 8, title: 'Clay', translation: '黏土', phonetic: '/kleɪ/', example: 'Clay is soft.', exampleTranslation: '黏土很柔软。', content: 'Clay\n黏土\n/kleɪ/\n\nClay is soft.\n黏土很柔软。' },
-  ...require('./joinin')
 ]
