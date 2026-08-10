@@ -77,7 +77,7 @@ Page({
       this.recorder.onStop(result => {
         const taskId = this.data.recordingTaskId
         this.setData({ recordingTaskId: '' })
-        if (taskId && result.tempFilePath) this.uploadEvidence(taskId, 'audio', result.tempFilePath)
+        if (taskId && result.tempFilePath) this.confirmAudioUpload(taskId, result.tempFilePath)
       })
       this.recorder.onError(() => {
         this.setData({ recordingTaskId: '' })
@@ -213,6 +213,27 @@ Page({
   },
   stopRecording() {
     if (this.recorder && this.data.recordingTaskId) this.recorder.stop()
+  },
+  confirmAudioUpload(taskId, filePath) {
+    this._pendingAudio = { taskId, filePath }
+    wx.showModal({
+      title: '录音完成',
+      content: '确认上传本次录音并完成打卡吗？',
+      confirmText: '确认上传',
+      cancelText: '暂不上传',
+      success: result => {
+        const pending = this._pendingAudio
+        this._pendingAudio = null
+        if (result.confirm && pending && pending.taskId === taskId) {
+          this.uploadEvidence(pending.taskId, 'audio', pending.filePath)
+        } else if (!result.confirm) {
+          wx.showToast({ title: '本次录音未上传', icon: 'none' })
+        }
+      },
+      fail: () => {
+        this._pendingAudio = null
+      }
+    })
   },
   uploadEvidence(taskId, type, filePath) {
     if (!taskId || !filePath || this.data.uploadingTaskId) return

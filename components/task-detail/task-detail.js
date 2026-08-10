@@ -21,7 +21,8 @@ Component({
     statusText: '待打卡',
     statusHint: '孩子完成后可提交打卡',
     playingFileId: '',
-    resolvingFileId: ''
+    resolvingFileId: '',
+    evidenceItems: []
   },
   lifetimes: {
     detached() {
@@ -31,6 +32,7 @@ Component({
   observers: {
     task(task) {
       this.stopAudio()
+      this.loadEvidenceItems(task)
       const status = task && task.status
       const map = {
         todo: ['待打卡', '上传图片、录音或视频后可完成打卡'],
@@ -46,6 +48,34 @@ Component({
     }
   },
   methods: {
+    loadEvidenceItems(task) {
+      const evidences = Array.isArray(task && task.evidences) ? task.evidences.filter(item => item && item.fileID) : []
+      const requestId = (this._evidenceRequestId || 0) + 1
+      this._evidenceRequestId = requestId
+      if (!evidences.length) {
+        this.setData({ evidenceItems: [] })
+        return
+      }
+
+      const resolveEvidence = item => {
+        if (!item.fileID.startsWith('cloud://')) return Promise.resolve({ ...item, fileURL: item.fileID })
+        if (item.type === 'image') {
+          return wx.cloud.getTempFileURL({ fileList: [item.fileID] }).then(result => {
+            const file = result.fileList && result.fileList[0]
+            if (!file || !file.tempFileURL) throw new Error('图片文件地址获取失败')
+            return { ...item, fileURL: file.tempFileURL }
+          })
+        }
+        return wx.cloud.downloadFile({ fileID: item.fileID }).then(result => {
+          if (!result || !result.tempFilePath) throw new Error('媒体文件下载失败')
+          return { ...item, fileURL: result.tempFilePath }
+        })
+      }
+      Promise.all(evidences.map(item => resolveEvidence(item).catch(() => ({ ...item, fileURL: '', loadError: true })))).then(items => {
+        if (this._evidenceRequestId !== requestId) return
+        this.setData({ evidenceItems: items })
+      })
+    },
     chooseImage() {
       this.triggerEvent('chooseimage', { id: this.properties.task.id })
     },
@@ -84,25 +114,49 @@ Component({
       this.stopAudio()
       const requestId = this._audioRequestId
       this.setData({ resolvingFileId: fileID })
-      wx.cloud.getTempFileURL({ fileList: [fileID] }).then(result => {
+      const evidence = (this.data.evidenceItems || []).find(item => item.fileID === fileID)
+      const play = url => {
         if (this._audioRequestId !== requestId) return
-        const file = result.fileList && result.fileList[0]
-        if (!file || !file.tempFileURL) throw new Error('录音文件地址获取失败')
+        if (!url) throw new Error('录音文件地址获取失败')
         const audio = wx.createInnerAudioContext()
         this._audio = audio
-        audio.src = file.tempFileURL
+        audio.autoplay = false
+        audio.obeyMuteSwitch = false
+        audio.onCanplay(() => {
+          if (this._audioRequestId === requestId) audio.play()
+        })
         audio.onPlay(() => this.setData({ playingFileId: fileID, resolvingFileId: '' }))
         audio.onEnded(() => this.stopAudio())
         audio.onError(() => {
           this.stopAudio()
           wx.showToast({ title: '录音播放失败，请重试', icon: 'none' })
         })
-        audio.play()
-      }).catch(error => {
+        audio.src = url
+      }
+      const source = evidence && evidence.fileURL
+      const resolve = source && !source.startsWith('cloud://')
+        ? Promise.resolve(source)
+        : wx.cloud.downloadFile({ fileID }).then(result => result && result.tempFilePath)
+      Promise.resolve(resolve).then(play).catch(error => {
         if (this._audioRequestId !== requestId) return
         this.setData({ playingFileId: '', resolvingFileId: '' })
         wx.showToast({ title: error.message || '录音文件加载失败', icon: 'none' })
       })
+    },
+    previewEvidenceImage(e) {
+      const currentFileID = e.currentTarget.dataset.fileId
+      const images = (this.data.evidenceItems || []).filter(item => item && item.type === 'image' && item.fileURL)
+      if (!currentFileID || !images.length) return
+
+      wx.showLoading({ title: '加载图片…', mask: true })
+      Promise.resolve().then(() => {
+        const urls = images.map(item => item.fileURL).filter(Boolean)
+        const current = (images.find(item => item.fileID === currentFileID) || {}).fileURL || urls[0]
+        if (!current || !urls.length) throw new Error('图片地址获取失败')
+        wx.previewImage({ current, urls })
+      }).catch(error => {
+        wx.showToast({ title: error.message || '图片加载失败，请重试', icon: 'none' })
+      }).finally(() => wx.hideLoading())
     },
     close() {
       this.stopAudio()
