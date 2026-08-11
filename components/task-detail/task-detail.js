@@ -15,6 +15,17 @@ const evidenceErrorMessage = error => {
   return '云端文件暂时无法读取，请稍后重试'
 }
 
+// 文件由云函数在确认当前用户属于任务家庭后换取临时地址。
+// 这样即使云存储设置为“上传者私有读”，家长也能查看孩子上传的凭证。
+const getAuthorizedEvidenceURL = (taskId, fileID) => wx.cloud.callFunction({
+  name: 'getEvidenceFileURL',
+  data: { taskId, fileID }
+}).then(response => {
+  const result = response && response.result
+  if (!result || !result.fileURL) throw new Error((result && result.message) || '云端文件地址获取失败')
+  return result.fileURL
+})
+
 Component({
   properties: {
     visible: { type: Boolean, value: false },
@@ -67,20 +78,16 @@ Component({
 
       const resolveEvidence = item => {
         if (!item.fileID.startsWith('cloud://')) return Promise.resolve({ ...item, fileURL: item.fileID })
-        if (item.type === 'image') {
-          return wx.cloud.getTempFileURL({ fileList: [item.fileID] }).then(result => {
-            const file = result.fileList && result.fileList[0]
-            if (!file || !file.tempFileURL) throw new Error('图片文件地址获取失败')
-            return { ...item, fileURL: file.tempFileURL }
-          })
-        }
-        return wx.cloud.downloadFile({ fileID: item.fileID }).then(result => {
-          if (!result || !result.tempFilePath) throw new Error('媒体文件下载失败')
-          return { ...item, fileURL: result.tempFilePath }
-        })
+        return getAuthorizedEvidenceURL(task && task.id, item.fileID).then(fileURL => ({ ...item, fileURL }))
       }
       Promise.all(evidences.map(item => resolveEvidence(item).catch(error => {
-        console.error('打卡凭证加载失败', { fileID: item.fileID, type: item.type, error })
+        console.error('打卡凭证临时地址获取失败', {
+          fileID: item.fileID,
+          type: item.type,
+          errCode: error && error.errCode,
+          errMsg: error && (error.errMsg || error.message),
+          error
+        })
         return { ...item, fileURL: '', loadError: true, loadErrorMessage: evidenceErrorMessage(error) }
       }))).then(items => {
         if (this._evidenceRequestId !== requestId) return
@@ -150,7 +157,7 @@ Component({
       const source = evidence && evidence.fileURL
       const resolve = source && !source.startsWith('cloud://')
         ? Promise.resolve(source)
-        : wx.cloud.downloadFile({ fileID }).then(result => result && result.tempFilePath)
+        : getAuthorizedEvidenceURL(this.properties.task && this.properties.task.id, fileID)
       Promise.resolve(resolve).then(play).catch(error => {
         if (this._audioRequestId !== requestId) return
         this.setData({ playingFileId: '', resolvingFileId: '' })
