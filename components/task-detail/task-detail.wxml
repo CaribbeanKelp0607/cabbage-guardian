@@ -30,6 +30,7 @@
       <view wx:if="{{task.resourceSnapshot.author}}" class="poem-meta">{{task.resourceSnapshot.dynasty}} · {{task.resourceSnapshot.author}}</view>
       <image wx:if="{{task.resourceSnapshot.image}}" class="resource-snapshot-image" src="{{task.resourceSnapshot.image}}" mode="widthFix" />
       <view class="poem-content">{{task.resourceSnapshot.content}}</view>
+      <button wx:for="{{pronunciationWords}}" wx:key="*this" class="evidence-audio" data-word="{{item}}" bindtap="playPronunciation" loading="{{resolvingFileId==='pronunciation:'+item}}">{{playingFileId==='pronunciation:'+item?'■ 停止播放':'▶ 听单词读音'}} · {{item}}</button>
     </view>
     <view wx:if="{{evidenceItems.length}}" class="evidence-section">
       <view class="detail-label">打卡凭证</view>

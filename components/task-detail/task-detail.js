@@ -41,7 +41,8 @@ Component({
     statusHint: '孩子完成后可提交打卡',
     playingFileId: '',
     resolvingFileId: '',
-    evidenceItems: []
+    evidenceItems: [],
+    pronunciationWords: []
   },
   lifetimes: {
     detached() {
@@ -52,6 +53,18 @@ Component({
     task(task) {
       this.stopAudio()
       this.loadEvidenceItems(task)
+      const resource = task && task.resourceSnapshot
+      const english = resource && (resource.libraryId === 'english' || resource.category === 'block')
+      // 导入词卡的标题可能包含「015 · Bookshelf /音标/」。只读英文词名。
+      const extractWord = value => {
+        const text = String(value || '').trim().replace(/^\d+\s*[.·、:：)）-]?\s*/, '')
+        const match = text.match(/^([A-Za-z][A-Za-z '\u2019-]*)(?=\s*[/\[（(\u4e00-\u9fff]|$)/)
+        return match ? match[1].trim() : ''
+      }
+      const titleWord = resource && extractWord(resource.title)
+      const firstLineWord = resource && extractWord(String(resource.content || '').split('\n')[0])
+      const words = english ? [titleWord || firstLineWord] : []
+      this.setData({ pronunciationWords: [...new Set(words.map(word => String(word || '').trim()).filter(word => /^[A-Za-z][A-Za-z '\u2019-]{0,99}$/.test(word)))] })
       const status = task && task.status
       const map = {
         todo: ['待打卡', '上传图片、录音或视频后可完成打卡'],
@@ -67,6 +80,52 @@ Component({
     }
   },
   methods: {
+    playPronunciation(e) {
+      const word = e.currentTarget.dataset.word
+      if (!this.data.pronunciationWords.includes(word)) return
+      const fileID = 'pronunciation:' + word
+      if (this.data.playingFileId === fileID || this.data.resolvingFileId === fileID) {
+        this.stopAudio()
+        return
+      }
+      this.stopAudio()
+      const requestId = this._audioRequestId
+      const parts = word.trim().split(/\s+/)
+      // 一次听读只进入一次加载状态，回退和切词不重置按钮。
+      this.setData({ resolvingFileId: fileID })
+      const play = (queue, index, canSplit = false) => {
+        if (this._audioRequestId !== requestId) return
+        this.destroyAudio()
+        const audio = wx.createInnerAudioContext()
+        this._audio = audio
+        const active = () => this._audioRequestId === requestId && this._audio === audio
+        audio.obeyMuteSwitch = false
+        audio.onPlay(() => {
+          if (active() && this.data.playingFileId !== fileID) {
+            this.setData({ playingFileId: fileID, resolvingFileId: '' })
+          }
+        })
+        audio.onEnded(() => {
+          if (!active()) return
+          if (index + 1 < queue.length) play(queue, index + 1)
+          else this.stopAudio()
+        })
+        audio.onError(error => {
+          if (!active()) return
+          console.warn('单词读音加载失败', { word: queue[index], error })
+          if (canSplit && parts.length > 1) {
+            play(parts, 0)
+            return
+          }
+          this.stopAudio()
+          wx.showToast({ title: '读音加载失败，请稍后重试', icon: 'none' })
+        })
+        audio.src = 'https://dict.youdao.com/dictvoice?type=2&audio=' + encodeURIComponent(queue[index].toLowerCase())
+        audio.play()
+      }
+      // 优先完整词组；只有完整音频失败时才逐词播放，最多回退一次。
+      play([parts.join(' ')], 0, true)
+    },
     loadEvidenceItems(task) {
       const evidences = Array.isArray(task && task.evidences) ? task.evidences.filter(item => item && item.fileID) : []
       const requestId = (this._evidenceRequestId || 0) + 1
