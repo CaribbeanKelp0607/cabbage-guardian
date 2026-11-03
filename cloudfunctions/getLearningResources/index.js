@@ -1,4 +1,5 @@
 const cloud = require('wx-server-sdk')
+const crypto = require('crypto')
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
 const db = cloud.database()
@@ -47,6 +48,10 @@ exports.main = async ({ subject = '', libraryId = '', grade = 3, volume = 'first
   const resources = seededResources.concat(familyResources.filter(item => item.libraryId === requestedLibrary))
     .filter(item => !category || item.category === category)
     .sort((a, b) => Number(a.unit || 0) - Number(b.unit || 0) || String(a.title || '').localeCompare(String(b.title || ''), 'zh-CN'))
+    .map(resource => {
+      const key = crypto.createHash('sha256').update(String(resource._id || resource.id)).digest('hex')
+      return { ...resource, dispatchCount: Number((family.resourceDispatchCounts || {})[key] || 0) }
+    })
 
   const customLibraries = familyResources
     .map(item => item.libraryId && item.libraryId !== 'chinese' && item.libraryId !== 'english' && item.libraryId !== 'math'

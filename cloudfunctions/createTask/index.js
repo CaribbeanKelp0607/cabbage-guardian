@@ -71,7 +71,17 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType, date } =
     return { ok: true, duplicate: true }
   } catch (e) {}
 
-  await db.collection('dailyTasks').doc(taskId).set({
+  // 家庭文档作为事务中的共同锁，任务与累计次数一起提交。
+  return db.runTransaction(async transaction => {
+    const currentFamily = (await transaction.collection('families').doc(family._id).get()).data
+    let existing
+    try {
+      existing = (await transaction.collection('dailyTasks').doc(taskId).get()).data
+    } catch (error) {
+      if (!/not.?exist|not.?found|不存在/i.test(String(error.errMsg || error.message || ''))) throw error
+    }
+    if (existing) return { ok: true, duplicate: true }
+    await transaction.collection('dailyTasks').doc(taskId).set({
     data: {
       familyId: family._id,
       date: taskDate,
@@ -84,6 +94,15 @@ exports.main = async ({ title, detail, requestId, resourceId, taskType, date } =
       status: 'todo',
       createdAt: db.serverDate()
     }
+    })
+    let dispatchCount
+    if (resourceId) {
+      const key = crypto.createHash('sha256').update(String(resourceId)).digest('hex')
+      const counts = { ...(currentFamily.resourceDispatchCounts || {}) }
+      dispatchCount = Number(counts[key] || 0) + 1
+      counts[key] = dispatchCount
+      await transaction.collection('families').doc(family._id).update({ data: { resourceDispatchCounts: counts } })
+    }
+    return { ok: true, duplicate: false, ...(resourceId ? { dispatchCount } : {}) }
   })
-  return { ok: true, duplicate: false }
 }

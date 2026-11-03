@@ -35,6 +35,7 @@
     <view wx:else class="resource-icon">{{item.icon}}</view>
     <view class="resource-copy">
       <view class="resource-title">{{item.title}}</view>
+      <view class="resource-meta">已派发 {{item.dispatchCount}} 次</view>
       <view class="resource-meta">{{item.categoryLabel}}<text wx:if="{{item.series}}"> · {{item.unitLabel}}</text><text wx:if="{{item.translation}}"> · {{item.translation}}</text><text wx:if="{{item.author}}"> · {{item.dynasty}} · {{item.author}}</text><text wx:if="{{item.subject!=='english'&&item.unit}}"> · 第 {{item.unit}} 单元</text></view>
       <view class="resource-preview">{{item.preview||item.content}}</view>
     </view>
@@ -52,6 +53,7 @@
         <view><view class="dialog-title">{{selectedResource.title}}</view><view class="dialog-meta">{{selectedResource.categoryLabel}}<text wx:if="{{selectedResource.series}}"> · {{selectedResource.unitLabel}}</text><text wx:if="{{selectedResource.translation}}"> · {{selectedResource.translation}}</text><text wx:if="{{selectedResource.author}}"> · {{selectedResource.dynasty}} · {{selectedResource.author}}</text><text wx:if="{{selectedResource.subject!=='english'&&selectedResource.unit}}"> · 第 {{selectedResource.unit}} 单元</text></view></view>
         <view class="dialog-close" bindtap="closeResource">×</view>
       </view>
+      <view class="dialog-meta">已派发 {{selectedResource.dispatchCount}} 次</view>
       <view wx:if="{{selectedResource.subject==='english'&&selectedResource.image&&selectedResource.source!=='family'}}" class="word-card">
         <image class="word-illustration" src="{{selectedResource.image}}" mode="widthFix" />
         <view class="word-translation">{{selectedResource.translation}}</view>

@@ -1,5 +1,7 @@
 # 云函数清单
 
+资料派发次数：重新部署 `createTask`、`getLearningResources`，并更新小程序前端。每个家庭的每项资料从本功能上线后累计成功派发次数；重复提交不加次数，删除任务不扣次数，历史任务暂不补算。计数保存在家庭文档 `resourceDispatchCounts` 中，与任务创建通过事务一起提交；公共资料不会累计其他家庭的次数。
+
 部署时创建：`bootstrapFamily`、`getDashboard`、`getLearningResources`、`seedTaskResources`、`createTask`、`manageTask`、`manageGarden`、`submitCheckin`、`confirmCheckin`、`manageMember`、`settleDay`、`manageLearningResource`。
 
 本次更新后需要重新上传部署 `bootstrapFamily`、`getDashboard`、`submitCheckin` 和 `settleDay`，并首次上传 `manageGarden`。第一次进入菜地时会初始化新版菜地并清空旧蔬菜；以后孩子每完成一次打卡，会获得一次待种植奖励，可选择玉米、胡萝卜、番茄、西瓜、白菜或土豆。`settleDay` 每天 23:00 执行：当天仍有未完成任务时，从菜地现有蔬菜中随机偷走一颗，并以家庭和日期为唯一键避免重复执行。

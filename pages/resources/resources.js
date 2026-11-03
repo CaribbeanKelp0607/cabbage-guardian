@@ -85,6 +85,7 @@ Page({
       library: result.library || this.data.library,
       resources: (result.resources || []).map(resource => ({
         ...resource,
+        dispatchCount: Number(resource.dispatchCount || 0),
         categoryLabel: resource.categoryLabel || this.categoryLabel(resource.category, resourceCategories),
         icon: ({ poem: '诗', text: '文', classical: '古', language: '积', block: 'A', joinin: '英' })[resource.category] || '学',
         preview: String(resource.content || '').replace(/\n/g, ' / ') || (resource.image ? '已上传图片资源' : '')
@@ -171,6 +172,16 @@ Page({
     this.setData({ creatingType: taskType })
     const requestId = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2)
     store.add({ resourceId: resource._id || resource.id, taskType, requestId, date: this.data.resourceTaskDate }).then(result => {
+      if (!result.duplicate) {
+        const resourceId = resource._id || resource.id
+        const resources = this.data.resources.map(item => (item._id || item.id) === resourceId
+          ? { ...item, dispatchCount: result.dispatchCount == null ? Number(item.dispatchCount || 0) + 1 : result.dispatchCount }
+          : item)
+        this.setData({ resources })
+        this.filterResources()
+      }
+      // 再次打开任一资料库时从云端读取最新累计值。
+      getApp().globalData.resourceCache = {}
       wx.showToast({ title: result.duplicate ? '该日期已创建该任务' : '已创建任务', icon: 'none' })
       this.setData({ creatingType: '', resourceVisible: false, selectedResource: {} })
     }).catch(error => {
