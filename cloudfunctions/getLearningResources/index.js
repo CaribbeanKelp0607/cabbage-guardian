@@ -24,6 +24,18 @@ const defaultCategories = {
 }
 const today = () => new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10)
 const uniqueById = values => values.filter((item, index, list) => item && item.id && list.findIndex(other => other.id === item.id) === index)
+const minecraftThemes = new Set(['minecraft-food', 'minecraft-ore', 'minecraft-redstone', 'minecraft-animal', 'minecraft-monster'])
+const displayCategory = item => item.subject === 'english' && minecraftThemes.has(item.category) ? 'block' : item.category
+const getAll = async query => {
+  const pageSize = 100
+  const values = []
+  for (let offset = 0; ; offset += pageSize) {
+    const result = await query.skip(offset).limit(pageSize).get()
+    const page = result.data || []
+    values.push(...page)
+    if (page.length < pageSize) return values
+  }
+}
 
 exports.main = async ({ subject = '', libraryId = '', grade = 3, volume = 'first', category = '' } = {}) => {
   const { OPENID } = cloud.getWXContext()
@@ -39,18 +51,28 @@ exports.main = async ({ subject = '', libraryId = '', grade = 3, volume = 'first
       ? { grade: Number(grade), volume, enabled: true }
       : null
   const [familyResourcesResult, seededResult] = await Promise.all([
-    db.collection('learningResources').where({ familyId: family._id, enabled: true }).limit(100).get(),
-    seededQuery ? db.collection('learningResources').where(seededQuery).limit(100).get() : Promise.resolve({ data: [] })
+    getAll(db.collection('learningResources').where({ familyId: family._id, enabled: true })),
+    seededQuery ? getAll(db.collection('learningResources').where(seededQuery)) : Promise.resolve([])
   ])
-  const familyResources = familyResourcesResult.data
+  const familyResources = familyResourcesResult
   // 英语公共资源查询会同时命中家庭导入资源；家庭资源仅在后半段合并一次。
-  const seededResources = seededResult.data.filter(item => !item.familyId)
-  const resources = seededResources.concat(familyResources.filter(item => item.libraryId === requestedLibrary))
-    .filter(item => !category || item.category === category)
+  const seededResources = seededResult.filter(item => !item.familyId)
+  // 家庭导入的同名资源用于补充或替换公共资源（例如补齐单词卡原图），
+  // 避免资料库同时显示两张相同的卡片。
+  const candidates = seededResources.concat(familyResources.filter(item => item.libraryId === requestedLibrary))
+  const resourceKey = item => `${item.category || ''}:${String(item.title || '').trim().toLocaleLowerCase()}`
+  const resources = candidates.reduce((items, resource) => {
+    const index = items.findIndex(item => resourceKey(item) === resourceKey(resource))
+    if (index < 0) items.push(resource)
+    else if (resource.familyId) items[index] = resource
+    return items
+  }, [])
+    .filter(item => !category || displayCategory(item) === category || item.category === category)
     .sort((a, b) => Number(a.unit || 0) - Number(b.unit || 0) || String(a.title || '').localeCompare(String(b.title || ''), 'zh-CN'))
     .map(resource => {
       const key = crypto.createHash('sha256').update(String(resource._id || resource.id)).digest('hex')
-      return { ...resource, dispatchCount: Number((family.resourceDispatchCounts || {})[key] || 0) }
+      const grouped = displayCategory(resource) === 'block' && minecraftThemes.has(resource.category)
+      return { ...resource, category: displayCategory(resource), categoryLabel: grouped ? '我的世界单词卡' : resource.categoryLabel, dispatchCount: Number((family.resourceDispatchCounts || {})[key] || 0) }
     })
 
   const customLibraries = familyResources
@@ -60,7 +82,7 @@ exports.main = async ({ subject = '', libraryId = '', grade = 3, volume = 'first
     .filter(Boolean)
   const libraries = uniqueById(defaultLibraries.concat(customLibraries))
   const dynamicCategories = familyResources
-    .filter(item => item.libraryId === requestedLibrary && item.category)
+    .filter(item => item.libraryId === requestedLibrary && item.category && !(requestedLibrary === 'english' && minecraftThemes.has(item.category)))
     .map(item => ({ id: item.category, label: item.categoryLabel || '未分类' }))
   const categories = uniqueById((defaultCategories[requestedLibrary] || []).concat(dynamicCategories))
   const categoryMap = defaultLibraries.reduce((map, item) => {

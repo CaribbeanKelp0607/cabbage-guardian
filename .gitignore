@@ -3,5 +3,5 @@
 project.private.config.json
 node_modules/
 .env.resource-import.local
-.resource-import.local.json
+.resource-import*.local.json
 tmp/
