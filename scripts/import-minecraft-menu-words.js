@@ -14,7 +14,26 @@ const words = [
   ['Realms', '领域；专用多人游戏服务器', 'Minecraft Realms：我的世界领域。'],
   ['Options', '选项；设置', '打开游戏设置。'],
   ['Quit', '退出', 'Quit Game：退出游戏。'],
-  ['Game', '游戏', 'Quit Game：退出游戏。']
+  ['Game', '游戏', 'Quit Game：退出游戏。'],
+  ['FOV', '视野范围（Field of View 的缩写）', 'FOV: 91：视野范围为 91。'],
+  ['Online', '在线；联网', 'Online：在线设置。'],
+  ['Skin', '皮肤；外观', 'Skin Customization：皮肤自定义。'],
+  ['Customization', '自定义', 'Skin Customization：皮肤自定义。'],
+  ['Music', '音乐', 'Music & Sounds：音乐和声音。'],
+  ['Sounds', '声音；音效', 'Music & Sounds：音乐和声音。'],
+  ['Video', '视频；画面', 'Video Settings：视频设置。'],
+  ['Settings', '设置', 'Video Settings：视频设置；Chat Settings：聊天设置。'],
+  ['Controls', '控制；操作', 'Controls：控制设置。'],
+  ['Language', '语言', 'Language：语言设置。'],
+  ['Chat', '聊天', 'Chat Settings：聊天设置。'],
+  ['Resource', '资源', 'Resource Packs：资源包。'],
+  ['Packs', '包；套装', 'Resource Packs：资源包。'],
+  ['Accessibility', '无障碍功能', 'Accessibility Settings：无障碍设置。'],
+  ['Telemetry', '遥测', 'Telemetry Data：遥测数据。'],
+  ['Data', '数据', 'Telemetry Data：遥测数据。'],
+  ['Credits', '制作人员名单；致谢', 'Credits & Attribution：制作人员与归属信息。'],
+  ['Attribution', '署名；归属', 'Credits & Attribution：制作人员与归属信息。'],
+  ['Done', '完成', 'Done：完成并返回。']
 ]
 
 for (const line of fs.readFileSync(path.join(process.cwd(), '.env.resource-import.local'), 'utf8').split(/\r?\n/)) {
@@ -33,7 +52,7 @@ async function main() {
     familyId, source: 'family', libraryId: 'english', libraryLabel: '英语资料库', subject: 'english',
     category: 'minecraft-menu-words', categoryLabel: '我的世界菜单单词', unit: index + 1,
     title, content: `${title}\n${translation}\n\n${context}`, image: '', enabled: true
-  }))
+  })).filter(item => !process.argv.includes('--new-only') || item.unit > 10)
   console.log(`目标：英语资料库 / 我的世界菜单单词，${entries.length} 项`)
   if (!process.argv.includes('--apply')) return entries.forEach(item => console.log(item.title))
   for (const entry of entries) {
